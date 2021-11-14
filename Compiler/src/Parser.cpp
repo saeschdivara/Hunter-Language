@@ -79,6 +79,9 @@ namespace Hunter::Compiler {
                     ParseResult result = ParseExpression(i-1, input);
                     i = result.Pos+1;
                     expr = new PrintExpression(result.Expr);
+                } else {
+                    std::cerr << "Unknown keyword: " << str << std::endl;
+                    exit(1);
                 }
 
                 str = "";
