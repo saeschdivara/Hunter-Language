@@ -11,7 +11,7 @@ int main() {
 
     std::string input = R"(
         fun main()
-            print("Hello World")
+            print("Hello World\n")
     )";
 
     Hunter::Compiler::AbstractSyntaxTree * ast = parser.Parse(input);
