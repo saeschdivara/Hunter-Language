@@ -21,8 +21,15 @@ namespace Hunter::Compiler {
     class Expression {
     public:
         virtual ~Expression() {}
-        virtual void Dump() = 0;
+        virtual void Dump(int level = 0) = 0;
         virtual bool HasBlock() { return false; }
+
+    protected:
+        void DumpSpaces(int level = 0) {
+            for (int i = 0; i < level; ++i) {
+                std::cout << "  ";
+            }
+        }
     };
 
     class PrintExpression : public Expression {
@@ -30,10 +37,10 @@ namespace Hunter::Compiler {
         PrintExpression(Expression * expr) : m_Data(expr) {}
         Expression * GetInput() { return m_Data; }
 
-        void Dump() override {
+        void Dump(int level = 0) override {
+            DumpSpaces(level);
             std::cout << "Print Expression: " << std::endl;
-            std::cout << "    ";
-            GetInput()->Dump();
+            GetInput()->Dump(level+1);
         }
 
     private:
@@ -45,7 +52,8 @@ namespace Hunter::Compiler {
         StringExpression(std::string str) : m_Data(std::move(str)) {}
         std::string & GetString() { return m_Data; }
 
-        void Dump() override {
+        void Dump(int level = 0) override {
+            DumpSpaces(level);
             std::cout << "String Expression: " << GetString() << std::endl;
         }
 
@@ -53,13 +61,34 @@ namespace Hunter::Compiler {
         std::string m_Data;
     };
 
+    class ConstExpression : public Expression {
+    public:
+        ConstExpression(std::string name, Expression * value) : m_VariableName(std::move(name)), m_Value(value) {}
+        std::string & GetVariableName() { return m_VariableName; }
+        Expression * GetValue() { return m_Value; }
+
+        void Dump(int level = 0) override {
+            DumpSpaces(level);
+            std::cout << "Const Expression: " << GetVariableName() << " := " << GetValue() << std::endl;
+        }
+
+    private:
+        std::string m_VariableName;
+        Expression * m_Value;
+    };
+
     class FunctionExpression : public Expression {
     public:
         FunctionExpression(std::string name) : m_Name(std::move(name)) {}
         std::string & GetName() { return m_Name; }
 
-        void Dump() override {
+        void Dump(int level = 0) override {
+            DumpSpaces(level);
             std::cout << "Function Expression: " << GetName() << std::endl;
+
+            for (const auto &subExpr : m_Body) {
+                subExpr->Dump(level+1);
+            }
         }
 
         bool HasBlock() override {
@@ -110,6 +139,7 @@ namespace Hunter::Compiler {
         ParseResult ParseExpression(int currentPos, const std::string & input);
         ParseResult ParseString(int currentPos, const std::string & input);
         ParseResult ParseFunctionHeader(int currentPos, const std::string & input);
+        ParseResult ParseConst(int currentPos, const std::string & input);
         Token GetCurrentToken();
 
     private:

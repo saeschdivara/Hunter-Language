@@ -28,7 +28,7 @@ namespace Hunter::Compiler {
                     if (auto * func = dynamic_cast<FunctionExpression *>(m_CurrentBlockExpression)) {
                         func->AddExpression(m_CurrentExpression);
                     }
-                } else {
+                } else if (m_CurrentExpression) {
                     m_CurrentBlockExpression = nullptr;
                     tree->AddExpression(m_CurrentExpression);
                 }
@@ -60,10 +60,10 @@ namespace Hunter::Compiler {
                 isLevelParsing = false;
 
                 if (level <= m_CurrentLevel) {
+                    m_CurrentLevel = level;
                     m_IsParsingBlock = false;
                 }
 
-                m_CurrentLevel = level;
             }
 
             if (isspace(c) || c == '(') {
@@ -79,6 +79,10 @@ namespace Hunter::Compiler {
                     ParseResult result = ParseExpression(i-1, input);
                     i = result.Pos+1;
                     expr = new PrintExpression(result.Expr);
+                } else if (str == "const") {
+                    ParseResult result = ParseConst(i, input);
+                    i = result.Pos+1;
+                    expr = result.Expr;
                 } else {
                     std::cerr << "Unknown keyword: " << str << std::endl;
                     exit(1);
@@ -130,6 +134,7 @@ namespace Hunter::Compiler {
 
                 ParseResult result = ParseString(i, input);
                 i = result.Pos+1;
+                currentPos = result.Pos+1;
                 expr = result.Expr;
 
                 str = "";
@@ -209,10 +214,45 @@ namespace Hunter::Compiler {
 
         }
 
-            return {
+        return {
+            .Pos = currentPos,
+            .Expr = new FunctionExpression(functionName)
+        };
+    }
+
+    ParseResult Parser::ParseConst(int currentPos, const std::string &input) {
+
+        std::string str;
+        std::string variableName;
+        Expression * value;
+
+        bool isParsingVariable = false;
+
+        for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
+            char c = input.at(i);
+            if (isspace(c) && isParsingVariable) {
+                variableName = str;
+                str = "";
+                isParsingVariable = false;
+            } else if (isspace(c)) {
+                continue;
+            } else if (variableName.empty() && !isParsingVariable) {
+                isParsingVariable = true;
+            } else if (!variableName.empty() && c == '=') {
+                ParseResult result = ParseExpression(currentPos+1, input);
+                value = result.Expr;
+                currentPos = result.Pos+1;
+            }
+
+            if (isParsingVariable) {
+                str.push_back(c);
+            }
+        }
+
+        return {
                 .Pos = currentPos,
-                .Expr = new FunctionExpression(functionName)
-            };
+                .Expr = new ConstExpression(variableName, value)
+        };
     }
 
     Token Parser::GetCurrentToken() {
