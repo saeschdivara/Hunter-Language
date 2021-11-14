@@ -24,6 +24,21 @@ namespace Hunter::Compiler {
         virtual void Dump() = 0;
     };
 
+    class PrintExpression : public Expression {
+    public:
+        PrintExpression(Expression * expr) : m_Data(expr) {}
+        Expression * GetInput() { return m_Data; }
+
+        void Dump() override {
+            std::cout << "Print Expression: " << std::endl;
+            std::cout << "    ";
+            GetInput()->Dump();
+        }
+
+    private:
+        Expression * m_Data;
+    };
+
     class StringExpression : public Expression {
     public:
         StringExpression(std::string str) : m_Data(std::move(str)) {}
@@ -55,6 +70,10 @@ namespace Hunter::Compiler {
             m_Expressions.push_back(expr);
         }
 
+        std::vector<Expression *> & GetInstructions() {
+            return m_Expressions;
+        }
+
         void Dump();
 
     private:
@@ -73,6 +92,7 @@ namespace Hunter::Compiler {
     protected:
 
         Expression * ParseLine(const std::string & input);
+        ParseResult ParseExpression(int currentPos, const std::string & input);
         ParseResult ParseString(int currentPos, const std::string & input);
         ParseResult ParseFunctionHeader(int currentPos, const std::string & input);
         Token GetCurrentToken();

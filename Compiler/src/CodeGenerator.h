@@ -1,5 +1,6 @@
 #pragma once
 
+#include <llvm/IR/LLVMContext.h>
 #include <string>
 
 namespace llvm {
@@ -8,9 +9,15 @@ namespace llvm {
 
 namespace Hunter::Compiler {
 
+    class AbstractSyntaxTree;
+
     class CodeGenerator {
     public:
-        llvm::Module * GenerateCodeFromString(const std::string & code);
+        llvm::Module * GenerateCode(AbstractSyntaxTree * ast);
+
+    private:
+        // make sure it lives as long as the module is used
+        llvm::LLVMContext m_Context;
     };
 }
 
