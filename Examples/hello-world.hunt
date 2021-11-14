@@ -1,0 +1,2 @@
+fun hunt()
+    print("Hello World\n")
