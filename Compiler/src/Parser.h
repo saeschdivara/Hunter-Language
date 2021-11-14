@@ -22,6 +22,7 @@ namespace Hunter::Compiler {
     public:
         virtual ~Expression() {}
         virtual void Dump() = 0;
+        virtual bool HasBlock() { return false; }
     };
 
     class PrintExpression : public Expression {
@@ -60,8 +61,22 @@ namespace Hunter::Compiler {
         void Dump() override {
             std::cout << "Function Expression: " << GetName() << std::endl;
         }
+
+        bool HasBlock() override {
+            return true;
+        }
+
+        void AddExpression(Expression * expr) {
+            m_Body.push_back(expr);
+        }
+
+        std::vector<Expression *> & GetBody() {
+            return m_Body;
+        }
+
     private:
         std::string m_Name;
+        std::vector<Expression *> m_Body;
     };
 
     class AbstractSyntaxTree {
@@ -99,9 +114,14 @@ namespace Hunter::Compiler {
 
     private:
         std::string m_DataStr;
+        Expression * m_CurrentExpression = nullptr;
+        Expression * m_CurrentBlockExpression = nullptr;
+
+        bool m_IsParsingBlock = false;
+        int m_CurrentLevel = 0;
+
         Token m_PreviousToken;
         Token m_CurrentToken;
-        Expression * m_CurrentExpression = nullptr;
     };
 
 }

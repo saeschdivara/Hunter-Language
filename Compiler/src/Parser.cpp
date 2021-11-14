@@ -20,7 +20,18 @@ namespace Hunter::Compiler {
             if (c == '\n') {
                 std::cout << m_DataStr << std::endl;
                 m_CurrentExpression = ParseLine(m_DataStr);
-                tree->AddExpression(m_CurrentExpression);
+
+                if (dynamic_cast<FunctionExpression *>(m_CurrentExpression)) {
+                    m_CurrentBlockExpression = m_CurrentExpression;
+                    tree->AddExpression(m_CurrentExpression);
+                } else if (m_IsParsingBlock) {
+                    if (auto * func = dynamic_cast<FunctionExpression *>(m_CurrentBlockExpression)) {
+                        func->AddExpression(m_CurrentExpression);
+                    }
+                } else {
+                    m_CurrentBlockExpression = nullptr;
+                    tree->AddExpression(m_CurrentExpression);
+                }
 
                 m_DataStr = "";
                 continue;
@@ -47,6 +58,12 @@ namespace Hunter::Compiler {
                 continue;
             } else if (!isspace(c) && isLevelParsing) {
                 isLevelParsing = false;
+
+                if (level <= m_CurrentLevel) {
+                    m_IsParsingBlock = false;
+                }
+
+                m_CurrentLevel = level;
             }
 
             if (isspace(c) || c == '(') {
@@ -56,6 +73,8 @@ namespace Hunter::Compiler {
                     ParseResult result = ParseFunctionHeader(i, input);
                     i = result.Pos+1;
                     expr = result.Expr;
+
+                    m_IsParsingBlock = true;
                 } else if (str == "print") {
                     ParseResult result = ParseExpression(i-1, input);
                     i = result.Pos+1;

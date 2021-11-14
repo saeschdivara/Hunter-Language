@@ -10,7 +10,7 @@ int main() {
     Hunter::Compiler::CodeGenerator codeGenerator;
 
     std::string input = R"(
-        fun main()
+        fun hunt()
             print("Hello World\n")
     )";
 

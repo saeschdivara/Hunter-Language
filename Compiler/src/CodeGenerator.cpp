@@ -39,12 +39,45 @@ namespace Hunter::Compiler {
                 module
         );
 
+        m_Functions["printf"] = printfFunc;
+
+        auto * simpleFuncType = llvm::FunctionType::get(llvm::Type::getVoidTy(m_Context), false);
+
         llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(m_Context, "EntryBlock", hunterFunction);
         llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
 
         for (const auto &instr : ast->GetInstructions()) {
             if (auto *funcExpr = dynamic_cast<FunctionExpression *>(instr)) {
-                //
+                std::string functionName = funcExpr->GetName();
+                llvm::Function * currentFunction;
+
+                if (m_Functions.contains(functionName)) {
+                    currentFunction = m_Functions[functionName];
+                } else {
+                    currentFunction = llvm::Function::Create(
+                            simpleFuncType,
+                            llvm::Function::InternalLinkage,
+                            functionName,
+                            module
+                    );
+
+                    // Create a new basic block to start insertion into.
+                    llvm::BasicBlock::Create(m_Context, "entry", currentFunction);
+
+                    m_Functions[funcExpr->GetName()] = currentFunction;
+                }
+                llvm::IRBuilder<> funcBlockBuilder(&currentFunction->getEntryBlock(), currentFunction->getEntryBlock().begin());
+
+                for (const auto &expr : funcExpr->GetBody()) {
+                    InsertExpression(&funcBlockBuilder, expr);
+                }
+
+                funcBlockBuilder.CreateRetVoid();
+
+                if (functionName == "hunt") {
+                    builder->CreateCall(currentFunction);
+                }
+
             } else if (auto *printExpr = dynamic_cast<PrintExpression *>(instr)) {
 
                 if (auto *strExpr = dynamic_cast<StringExpression *>(printExpr->GetInput())) {
@@ -66,5 +99,16 @@ namespace Hunter::Compiler {
         delete ostream;
 
         return module;
+    }
+
+    void CodeGenerator::InsertExpression(llvm::IRBuilder<> * builder, Expression *expr) {
+        if (auto *printExpr = dynamic_cast<PrintExpression *>(expr)) {
+
+            if (auto *strExpr = dynamic_cast<StringExpression *>(printExpr->GetInput())) {
+                llvm::GlobalVariable *var = builder->CreateGlobalString(llvm::StringRef(strExpr->GetString()));
+                llvm::Value *ops[] = {var};
+                builder->CreateCall(m_Functions["printf"], llvm::ArrayRef(ops, sizeof(ops) / sizeof(llvm::Value *)));
+            }
+        }
     }
 }
