@@ -182,6 +182,11 @@ namespace Hunter::Compiler {
     void CodeGenerator::InsertConstExpression(llvm::IRBuilder<> *builder, ConstExpression *constExpr) {
         std::string variableName = constExpr->GetVariableName();
         Expression * value = constExpr->GetValue();
+
+        if (m_Variables.contains(variableName)) {
+            std::cerr << "Variable " << variableName << " was already defined" << std::endl;
+            exit(1);
+        }
         
         if (auto *strExpr = dynamic_cast<StringExpression *>(value)) {
             llvm::GlobalVariable *strData = builder->CreateGlobalString(llvm::StringRef(strExpr->GetString()));
