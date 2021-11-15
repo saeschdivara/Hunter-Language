@@ -13,6 +13,8 @@ namespace llvm {
 namespace Hunter::Compiler {
 
     class Expression;
+    class ConstExpression;
+    class PrintExpression;
     class AbstractSyntaxTree;
 
     class CodeGenerator {
@@ -21,6 +23,8 @@ namespace Hunter::Compiler {
 
     protected:
         void InsertExpression(llvm::IRBuilder<> *builder, Expression * expr);
+        void InsertPrintExpression(llvm::IRBuilder<> *builder, PrintExpression *constExpr);
+        void InsertConstExpression(llvm::IRBuilder<> *builder, ConstExpression *constExpr);
 
     private:
         // make sure it lives as long as the module is used
@@ -28,6 +32,7 @@ namespace Hunter::Compiler {
 
         std::unordered_map<std::string, llvm::Function *> m_Functions;
         std::unordered_map<std::string, llvm::Value *> m_Variables;
+        std::unordered_map<std::string, Expression *> m_VariablesExpression;
     };
 }
 
