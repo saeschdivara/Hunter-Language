@@ -1,0 +1,12 @@
+fun hunt()
+    const helloNumber8 = 8
+    print(helloNumber8, "\n")
+
+    const helloNumber16 = 22200
+    print(helloNumber16, "\n")
+
+    const helloNumber32 = 62200
+    print(helloNumber32, "\n")
+
+    const helloNumber = 22222222232
+    print(helloNumber, "\n")
