@@ -27,6 +27,7 @@ namespace Hunter::Compiler {
         llvm::LLVMContext m_Context;
 
         std::unordered_map<std::string, llvm::Function *> m_Functions;
+        std::unordered_map<std::string, llvm::Value *> m_Variables;
     };
 }
 

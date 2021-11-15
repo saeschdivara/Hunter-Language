@@ -76,7 +76,7 @@ namespace Hunter::Compiler {
 
                     m_IsParsingBlock = true;
                 } else if (str == "print") {
-                    ParseResult result = ParseExpression(i-1, input);
+                    ParseResult result = ParseFunctionCall(i-1, input);
                     i = result.Pos+1;
                     expr = new PrintExpression(result.Expr);
                 } else if (str == "const") {
@@ -117,22 +117,35 @@ namespace Hunter::Compiler {
                 continue;
             }
 
-            if (c == '(') {
+            else if (c == '(') {
                 std::cout << "Word: " << str << std::endl;
                 str = "";
                 continue;
             }
 
-            if (c == ')') {
+            else if (c == ')') {
                 std::cout << "Word: " << str << std::endl;
                 str = "";
                 continue;
             }
 
-            if (c == '"') {
+            else if (c == '"') {
                 std::cout << "Word: " << str << std::endl;
 
                 ParseResult result = ParseString(i, input);
+                i = result.Pos+1;
+                currentPos = result.Pos+1;
+                expr = result.Expr;
+
+                str = "";
+                continue;
+            }
+
+            else if (isalpha(c) && str.empty()) {
+                // identifier IdentifierExpression
+                std::cout << "Word: " << str << std::endl;
+
+                ParseResult result = ParseIdentifier(i-2, input);
                 i = result.Pos+1;
                 currentPos = result.Pos+1;
                 expr = result.Expr;
@@ -255,17 +268,68 @@ namespace Hunter::Compiler {
         };
     }
 
-    Token Parser::GetCurrentToken() {
-        m_PreviousToken = m_CurrentToken;
+    ParseResult Parser::ParseFunctionCall(int currentPos, const std::string &input) {
+        std::vector<Expression *> parameters;
 
-        if (m_DataStr == "fun") {
-            m_CurrentToken = Token::KEYWORD_FUNCTION;
-        } else if (m_DataStr == "print") {
-            m_CurrentToken = Token::KEYWORD_PRINT;
-        } else if (m_CurrentToken == Token::KEYWORD_FUNCTION) {
-            m_CurrentToken = Token::IDENTIFIER;
+        std::string str;
+        bool isParsingParameter = false;
+
+        for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
+            char c = input.at(i);
+
+            if (isspace(c) || c == ',' || c == '(' || c == ')') {
+                isParsingParameter = false;
+                if (!str.empty()) {
+                    std::cout << str << std::endl;
+                    ParseResult result;
+
+                    if (str.starts_with("\"")) {
+                        result = ParseString(0, str);
+                    } else {
+                        result = ParseExpression(0, str);
+                    }
+
+
+                    if (!result.Expr) {
+                        std::cerr << "Could not parse expression: " << str << std::endl;
+                        exit(1);
+                    }
+
+                    parameters.push_back(result.Expr);
+
+                    str = "";
+                }
+
+                continue;
+            } else if (!isParsingParameter) {
+                isParsingParameter = true;
+            }
+
+            str.push_back(c);
         }
 
-        return m_CurrentToken;
+        return {
+                .Pos = currentPos,
+                .Expr = new FunctionCallExpression(parameters)
+        };
+    }
+
+    ParseResult Parser::ParseIdentifier(int currentPos, const std::string &input) {
+        std::string str;
+
+        for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
+            char c = input.at(i);
+
+            if (!isalnum(c) && c != '_') {
+                break;
+            }
+
+            str.push_back(c);
+        }
+
+        return {
+            .Pos = currentPos,
+            .Expr = new IdentifierExpression(str)
+        };
     }
 }

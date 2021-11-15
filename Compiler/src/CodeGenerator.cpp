@@ -20,16 +20,16 @@ namespace Hunter::Compiler {
         auto * module = new llvm::Module("Hunt", m_Context);
 
         llvm::Function *hunterFunction = llvm::Function::Create(
-                llvm::FunctionType::get(llvm::Type::getInt32Ty(m_Context), true),
+                llvm::FunctionType::get(llvm::Type::getInt32Ty(m_Context), false),
                 llvm::Function::ExternalLinkage,
                 "main",
                 module
         );
 
         auto *printfFuncType = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(m_Context),
+                llvm::Type::getInt32Ty(m_Context),
                 std::vector<llvm::Type *>({llvm::Type::getInt8PtrTy(m_Context)}),
-                false
+                true
         );
 
         llvm::Function *printfFunc = llvm::Function::Create(
@@ -78,13 +78,8 @@ namespace Hunter::Compiler {
                     builder->CreateCall(currentFunction);
                 }
 
-            } else if (auto *printExpr = dynamic_cast<PrintExpression *>(instr)) {
-
-                if (auto *strExpr = dynamic_cast<StringExpression *>(printExpr->GetInput())) {
-                    llvm::GlobalVariable *var = builder->CreateGlobalString(llvm::StringRef(strExpr->GetString()));
-                    llvm::Value *ops[] = {var};
-                    builder->CreateCall(printfFunc, llvm::ArrayRef(ops, sizeof(ops) / sizeof(llvm::Value *)));
-                }
+            } else {
+                InsertExpression(builder, instr);
             }
         }
 
@@ -104,10 +99,47 @@ namespace Hunter::Compiler {
     void CodeGenerator::InsertExpression(llvm::IRBuilder<> * builder, Expression *expr) {
         if (auto *printExpr = dynamic_cast<PrintExpression *>(expr)) {
 
-            if (auto *strExpr = dynamic_cast<StringExpression *>(printExpr->GetInput())) {
-                llvm::GlobalVariable *var = builder->CreateGlobalString(llvm::StringRef(strExpr->GetString()));
-                llvm::Value *ops[] = {var};
-                builder->CreateCall(m_Functions["printf"], llvm::ArrayRef(ops, sizeof(ops) / sizeof(llvm::Value *)));
+            if (auto *funcCallExpr = dynamic_cast<FunctionCallExpression *>(printExpr->GetInput())) {
+                unsigned long paramNumber = funcCallExpr->GetParameters().size();
+                std::string formatString;
+
+                for (int i = 0; i < paramNumber; ++i) {
+                    formatString += "%s";
+                }
+
+                llvm::GlobalVariable *var = builder->CreateGlobalString(llvm::StringRef(formatString));
+
+                std::vector<llvm::Value *> ops;
+                ops.push_back(var);
+
+                for (const auto &parameter : funcCallExpr->GetParameters()) {
+
+                    if (auto *strExpr = dynamic_cast<StringExpression *>(parameter)) {
+                        llvm::GlobalVariable *strData = builder->CreateGlobalString(llvm::StringRef(strExpr->GetString()));
+                        ops.push_back(strData);
+                    } else if (auto *identifierExpr = dynamic_cast<IdentifierExpression *>(parameter)) {
+                        std::string variableName = identifierExpr->GetVariableName();
+                        if (!m_Variables.contains(variableName)) {
+                            std::cerr << "Could not find variable " << variableName << std::endl;
+                            exit(1);
+                        }
+
+                        ops.push_back(builder->CreateLoad(builder->getInt8PtrTy(), m_Variables[variableName]));
+                    }
+                }
+                builder->CreateCall(m_Functions["printf"], llvm::ArrayRef(ops));
+            }
+        }
+        else if (auto *constExpr = dynamic_cast<ConstExpression *>(expr)) {
+
+            if (auto *strExpr = dynamic_cast<StringExpression *>(constExpr->GetValue())) {
+                llvm::GlobalVariable *strData = builder->CreateGlobalString(llvm::StringRef(strExpr->GetString()));
+                std::string variableName = constExpr->GetVariableName();
+                auto * var = builder->CreateAlloca(builder->getInt8PtrTy(), nullptr, variableName);
+
+                m_Variables[variableName] = var;
+
+                builder->CreateStore(strData, var);
             }
         }
     }

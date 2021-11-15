@@ -2,21 +2,10 @@
 
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace Hunter::Compiler {
-
-    enum class Token {
-        UNKNOWN = -1,
-
-        END_OF_LINE = 0,
-
-        KEYWORD_FUNCTION,
-        KEYWORD_PRINT,
-
-        IDENTIFIER,
-        STRING,
-    };
 
     class Expression {
     public:
@@ -69,12 +58,45 @@ namespace Hunter::Compiler {
 
         void Dump(int level = 0) override {
             DumpSpaces(level);
-            std::cout << "Const Expression: " << GetVariableName() << " := " << GetValue() << std::endl;
+            std::cout << "Const Expression: " << GetVariableName() << " := " << std::endl;
+            GetValue()->Dump(level+1);
         }
 
     private:
         std::string m_VariableName;
         Expression * m_Value;
+    };
+
+    class IdentifierExpression : public Expression {
+    public:
+        IdentifierExpression(std::string name) : m_VariableName(std::move(name)) {}
+        std::string & GetVariableName() { return m_VariableName; }
+
+        void Dump(int level = 0) override {
+            DumpSpaces(level);
+            std::cout << "Identifier Expression: " << GetVariableName() << std::endl;
+        }
+
+    private:
+        std::string m_VariableName;
+    };
+
+    class FunctionCallExpression : public Expression {
+    public:
+        FunctionCallExpression(std::vector<Expression *> parameters) : m_Parameters(std::move(parameters)) {}
+        std::vector<Expression *> & GetParameters() { return m_Parameters; }
+
+        void Dump(int level = 0) override {
+            DumpSpaces(level);
+            std::cout << "Function call Expression: " << std::endl;
+
+            for (const auto &parameter : m_Parameters) {
+                parameter->Dump(level+1);
+            }
+        }
+
+    private:
+        std::vector<Expression *> m_Parameters;
     };
 
     class FunctionExpression : public Expression {
@@ -140,7 +162,8 @@ namespace Hunter::Compiler {
         ParseResult ParseString(int currentPos, const std::string & input);
         ParseResult ParseFunctionHeader(int currentPos, const std::string & input);
         ParseResult ParseConst(int currentPos, const std::string & input);
-        Token GetCurrentToken();
+        ParseResult ParseFunctionCall(int currentPos, const std::string & input);
+        ParseResult ParseIdentifier(int currentPos, const std::string & input);
 
     private:
         std::string m_DataStr;
@@ -149,9 +172,6 @@ namespace Hunter::Compiler {
 
         bool m_IsParsingBlock = false;
         int m_CurrentLevel = 0;
-
-        Token m_PreviousToken;
-        Token m_CurrentToken;
     };
 
 }
