@@ -141,14 +141,32 @@ namespace Hunter::Compiler {
                 continue;
             }
 
+            // parse identifier
             else if (isalpha(c) && str.empty()) {
-                // identifier IdentifierExpression
                 std::cout << "Word: " << str << std::endl;
 
                 ParseResult result = ParseIdentifier(i-2, input);
                 i = result.Pos+1;
                 currentPos = result.Pos+1;
                 expr = result.Expr;
+
+                str = "";
+                continue;
+            }
+
+            // parse number
+            else if ((isnumber(c) || c == '-') && str.empty()) {
+                std::cout << "Word: " << str << std::endl;
+
+                ParseResult result = ParseInt(i-1, input);
+                i = result.Pos+1;
+                currentPos = result.Pos+1;
+                expr = result.Expr;
+
+                if (!expr) {
+                    std::cerr << "Could not parse int number" << std::endl;
+                    exit(1);
+                }
 
                 str = "";
                 continue;
@@ -262,9 +280,48 @@ namespace Hunter::Compiler {
             }
         }
 
+        if (!value) {
+            std::cerr << "Could not parse constant value" << std::endl;
+            exit(1);
+        }
+
         return {
                 .Pos = currentPos,
                 .Expr = new ConstExpression(variableName, value)
+        };
+    }
+
+    ParseResult Parser::ParseInt(int currentPos, const std::string &input) {
+
+        std::string str;
+        bool isNegative = false;
+
+        for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
+            char c = input.at(i);
+
+            if (c == '-') {
+                isNegative = true;
+                continue;
+            }
+
+            if (!isnumber(c)) {
+                break;
+            }
+
+            str.push_back(c);
+        }
+
+        int64_t value = std::stoll(str);
+
+        if (isNegative) {
+            value *= -1;
+        }
+
+        IntType type = GetTypeFromValue(value);
+
+        return {
+            .Pos = currentPos,
+            .Expr = new IntExpression(type, value)
         };
     }
 
@@ -331,5 +388,19 @@ namespace Hunter::Compiler {
             .Pos = currentPos,
             .Expr = new IdentifierExpression(str)
         };
+    }
+
+    IntType GetTypeFromValue(int64_t val) {
+        if (val >= INT8_MIN && val <= INT8_MAX) {
+            return IntType::i8;
+        }
+        else if (val >= INT16_MIN && val <= INT16_MAX) {
+            return IntType::i16;
+        }
+        else if (val >= INT32_MIN && val <= INT32_MAX) {
+            return IntType::i32;
+        }
+
+        return IntType::i64;
     }
 }

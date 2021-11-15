@@ -67,6 +67,32 @@ namespace Hunter::Compiler {
         Expression * m_Value;
     };
 
+    enum class IntType {
+        i8 = 8,
+        i16 = 16,
+        i32 = 32,
+        i64 = 64
+    };
+
+    IntType GetTypeFromValue(int64_t val);
+
+    class IntExpression : public Expression {
+    public:
+        IntExpression(IntType type, int64_t value) : m_Type(type), m_Value(value) {}
+
+        IntType GetType() const { return m_Type; }
+        int64_t GetValue() const { return m_Value; }
+
+        void Dump(int level = 0) override {
+            DumpSpaces(level);
+            std::cout << "Int Expression: " << GetValue() << " (" << static_cast<int>(GetType()) << ")" << std::endl;
+        }
+
+    private:
+        IntType m_Type;
+        int64_t m_Value;
+    };
+
     class IdentifierExpression : public Expression {
     public:
         IdentifierExpression(std::string name) : m_VariableName(std::move(name)) {}
@@ -162,6 +188,7 @@ namespace Hunter::Compiler {
         ParseResult ParseString(int currentPos, const std::string & input);
         ParseResult ParseFunctionHeader(int currentPos, const std::string & input);
         ParseResult ParseConst(int currentPos, const std::string & input);
+        ParseResult ParseInt(int currentPos, const std::string & input);
         ParseResult ParseFunctionCall(int currentPos, const std::string & input);
         ParseResult ParseIdentifier(int currentPos, const std::string & input);
 
