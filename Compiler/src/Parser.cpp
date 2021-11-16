@@ -20,14 +20,25 @@ namespace Hunter::Compiler {
 
             if (c == '\n') {
                 std::cout << m_DataStr << std::endl;
+
+                if (m_DataStr.empty()) {
+                    continue;
+                }
+
                 m_CurrentExpression = ParseLine(m_DataStr);
 
                 if (dynamic_cast<FunctionExpression *>(m_CurrentExpression)) {
                     m_CurrentBlockExpression = m_CurrentExpression;
                     tree->AddExpression(m_CurrentExpression);
+                } else if (dynamic_cast<IfExpression *>(m_CurrentExpression)) {
+                    m_CurrentBlockExpression = m_CurrentExpression;
+                    tree->AddExpression(m_CurrentExpression);
                 } else if (m_IsParsingBlock) {
                     if (auto * func = dynamic_cast<FunctionExpression *>(m_CurrentBlockExpression)) {
                         func->AddExpression(m_CurrentExpression);
+                    }
+                    else if (auto * ifExpr = dynamic_cast<IfExpression *>(m_CurrentBlockExpression)) {
+                        ifExpr->AddExpression(m_CurrentExpression);
                     }
                 } else if (m_CurrentExpression) {
                     m_CurrentBlockExpression = nullptr;
@@ -84,6 +95,12 @@ namespace Hunter::Compiler {
                     ParseResult result = ParseConst(i, input);
                     i = result.Pos+1;
                     expr = result.Expr;
+                }  else if (str == "if") {
+                    ParseResult result = ParseIf(i, input);
+                    i = result.Pos+1;
+                    expr = result.Expr;
+
+                    m_IsParsingBlock = true;
                 } else {
                     std::cerr << "Unknown keyword: " << str << std::endl;
                     exit(1);
@@ -139,20 +156,20 @@ namespace Hunter::Compiler {
                 expr = result.Expr;
 
                 str = "";
-                continue;
+                break;
             }
 
             // parse identifier
             else if (isalpha(c) && str.empty()) {
                 std::cout << "Word: " << str << std::endl;
 
-                ParseResult result = ParseIdentifier(i-2, input);
+                ParseResult result = ParseIdentifier(i-1, input);
                 i = result.Pos+1;
                 currentPos = result.Pos+1;
                 expr = result.Expr;
 
                 str = "";
-                continue;
+                break;
             }
 
             // parse number
@@ -170,10 +187,15 @@ namespace Hunter::Compiler {
                 }
 
                 str = "";
-                continue;
+                break;
             }
 
             str.push_back(c);
+        }
+
+        if (!expr) {
+            std::cerr << "Could not parse valid expression from " << input << std::endl;
+            exit(1);
         }
 
         return {
@@ -249,6 +271,108 @@ namespace Hunter::Compiler {
         return {
             .Pos = currentPos,
             .Expr = new FunctionExpression(functionName)
+        };
+    }
+
+    ParseResult Parser::ParseIf(int currentPos, const std::string &input) {
+
+        std::string str;
+        std::string expressionStr;
+
+        for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
+            char c = input.at(i);
+
+            if (isspace(c)) {
+                std::cout << str << std::endl;
+
+                if (str != "then") {
+                    expressionStr += str + " ";
+                }
+
+                str = "";
+                continue;
+            }
+
+            str.push_back(c);
+        }
+
+        if (str != "then") {
+            std::cerr << "If condition has always to be followed by then" << std::endl;
+            exit(1);
+        }
+
+        Expression * expr = ParseBoolean(0, expressionStr).Expr;
+
+        if (!expr) {
+            std::cerr << "Could not parse if boolean expression" << std::endl;
+            exit(1);
+        }
+
+        return {
+            .Pos = currentPos,
+            .Expr = new IfExpression(expr)
+        };
+    }
+
+    ParseResult Parser::ParseBoolean(int currentPos, const std::string &input) {
+
+        std::string str;
+        Expression * resultExpr;
+        OperatorType currentOperator = OperatorType::NoOperator;
+        int8_t operandsNumber = 0;
+        int8_t currentOperand = 0;
+
+        for (int i = currentPos; i < input.length(); ++i, currentPos++) {
+            char c = input.at(i);
+
+            if (isspace(c)) {
+                OperatorType operatorType = GetOperatorFromString(str);
+                if (operatorType != OperatorType::NoOperator) {
+                    currentOperator = operatorType;
+                    operandsNumber = GetOperandsNumber(currentOperator);
+
+                    currentOperand = operandsNumber > 1 ? 1 : 0;
+
+                    if (resultExpr == nullptr && operandsNumber > 1) {
+                        std::cerr << "Operator " << str << " needs " << operandsNumber << " operands" << std::endl;
+                        exit(1);
+                    }
+
+                } else {
+                    ParseResult result = ParseExpression(-1, str);
+
+                    if (currentOperator != OperatorType::NoOperator) {
+                        currentOperand += 1;
+
+                        if (currentOperand == operandsNumber) {
+
+                            if (operandsNumber == 1) {
+                                resultExpr = new BooleanExpression(currentOperator, result.Expr, nullptr);
+                            }
+                            else if (operandsNumber == 2) {
+                                resultExpr = new BooleanExpression(currentOperator, resultExpr, result.Expr);
+                            }
+
+                            currentOperator = OperatorType::NoOperator;
+                            operandsNumber = 0;
+                            currentOperand = 0;
+                        }
+                    }
+                    else {
+                        resultExpr = result.Expr;
+                    }
+                }
+
+                str = "";
+                continue;
+            }
+
+            str.push_back(c);
+        }
+
+        return {
+            .Pos = currentPos,
+            .Expr = resultExpr
         };
     }
 
@@ -389,19 +513,5 @@ namespace Hunter::Compiler {
             .Pos = currentPos,
             .Expr = new IdentifierExpression(str)
         };
-    }
-
-    IntType GetTypeFromValue(int64_t val) {
-        if (val >= INT8_MIN && val <= INT8_MAX) {
-            return IntType::i8;
-        }
-        else if (val >= INT16_MIN && val <= INT16_MAX) {
-            return IntType::i16;
-        }
-        else if (val >= INT32_MIN && val <= INT32_MAX) {
-            return IntType::i32;
-        }
-
-        return IntType::i64;
     }
 }

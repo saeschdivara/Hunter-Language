@@ -1,7 +1,36 @@
 #pragma once
 
+#include <string>
+#include <vector>
+#include <iostream>
 
 namespace Hunter::Compiler {
+
+    enum class IntType {
+        i8 = 8,
+        i16 = 16,
+        i32 = 32,
+        i64 = 64
+    };
+
+    IntType GetTypeFromValue(int64_t val);
+
+    enum class OperatorType {
+        NoOperator = 0,
+
+        LogicalEquals,
+        LogicalNot,
+
+        BitXor,
+        BitOr,
+        BitAnd,
+        BitNot,
+    };
+
+    OperatorType GetOperatorFromString(const std::string & str);
+    int8_t GetOperandsNumber(OperatorType operatorType);
+    std::string GetOperatorString(OperatorType operatorType);
+
     class Expression {
     public:
         virtual ~Expression() = default;
@@ -62,14 +91,38 @@ namespace Hunter::Compiler {
         Expression * m_Value;
     };
 
-    enum class IntType {
-        i8 = 8,
-        i16 = 16,
-        i32 = 32,
-        i64 = 64
-    };
+    class BooleanExpression : public Expression {
+    public:
+        BooleanExpression(OperatorType operatorType, Expression * leftExpression, Expression * rightExpression)
+            : m_Operator(operatorType), m_Left(leftExpression), m_Right(rightExpression) {}
 
-    IntType GetTypeFromValue(int64_t val);
+        OperatorType GetOperator() { return m_Operator; }
+        Expression * Left() { return m_Left; }
+        Expression * Right() { return m_Right; }
+
+        void Dump(int level) override {
+            DumpSpaces(level);
+            std::cout << "Boolean Expression: " << std::endl;
+
+            if (GetOperandsNumber(GetOperator()) == 1) {
+                DumpSpaces(level+1);
+                std::cout << GetOperatorString(GetOperator()) << std::endl;
+                Left()->Dump(level+1);
+            }
+
+            else if (GetOperandsNumber(GetOperator()) == 2) {
+                Left()->Dump(level+1);
+                DumpSpaces(level+1);
+                std::cout << GetOperatorString(GetOperator()) << std::endl;
+                Right()->Dump(level+1);
+            }
+        }
+
+    private:
+        OperatorType m_Operator;
+        Expression * m_Left;
+        Expression * m_Right;
+    };
 
     class IntExpression : public Expression {
     public:
@@ -148,6 +201,43 @@ namespace Hunter::Compiler {
 
     private:
         std::string m_Name;
+        std::vector<Expression *> m_Body;
+    };
+
+    class IfExpression : public Expression {
+    public:
+        IfExpression(Expression * condition) : m_Condition(condition) {}
+        Expression * GetCondition() { return m_Condition; }
+
+        void Dump(int level) override {
+            DumpSpaces(level+1);
+            std::cout << "If Expression: " << std::endl;
+
+            DumpSpaces(level+1);
+            std::cout << "  Condition: " << std::endl;
+            GetCondition()->Dump(level+3);
+
+            DumpSpaces(level+1);
+            std::cout << "  Body: " << std::endl;
+            for (const auto &subExpr : GetBody()) {
+                subExpr->Dump(level+3);
+            }
+        }
+
+        bool HasBlock() override {
+            return true;
+        }
+
+        void AddExpression(Expression * expr) {
+            m_Body.push_back(expr);
+        }
+
+        std::vector<Expression *> & GetBody() {
+            return m_Body;
+        }
+
+    private:
+        Expression * m_Condition;
         std::vector<Expression *> m_Body;
     };
 }

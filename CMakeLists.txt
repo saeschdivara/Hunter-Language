@@ -8,3 +8,5 @@ include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)  # Includes the contents of th
 conan_basic_setup()  # Prepares the CMakeList.txt for Conan.
 
 add_subdirectory(Compiler)
+
+add_executable(test-field test-field.cpp)

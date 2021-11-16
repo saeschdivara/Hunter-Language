@@ -7,7 +7,14 @@ find_package(LLVM CONFIG REQUIRED)
 
 include_directories("/usr/local/opt/llvm/include")
 
-add_executable(Hunter_Compiler src/main.cpp src/Parser.cpp src/Parser.h src/CodeGenerator.cpp src/CodeGenerator.h src/Compiler.cpp src/Compiler.h)
+add_executable(Hunter_Compiler
+
+        src/main.cpp
+        src/Parser.cpp src/Parser.h
+        src/CodeGenerator.cpp src/CodeGenerator.h
+        src/Compiler.cpp src/Compiler.h
+        src/Expressions.cpp src/Expressions.h
+)
 
 llvm_map_components_to_libnames(llvm_libraries analysis support core object target  irreader executionengine scalaropts instcombine orcjit runtimedyld)
 

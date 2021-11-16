@@ -11,8 +11,10 @@ int main() {
 
     std::string input = R"(
         fun hunt()
-            const helloNumber = 22222222232
-            print(helloNumber, "\n")
+            const num = 8
+
+            if num eq 8 then
+                print("Hello 8\n")
     )";
 
     Hunter::Compiler::AbstractSyntaxTree * ast = parser.Parse(input);
