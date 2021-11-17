@@ -27,22 +27,19 @@ namespace Hunter::Compiler {
 
                 m_CurrentExpression = ParseLine(m_DataStr);
 
-                if (dynamic_cast<FunctionExpression *>(m_CurrentExpression)) {
-                    m_CurrentBlockExpression = m_CurrentExpression;
-                    tree->AddExpression(m_CurrentExpression);
-                } else if (dynamic_cast<IfExpression *>(m_CurrentExpression)) {
-                    m_CurrentBlockExpression = m_CurrentExpression;
-                    tree->AddExpression(m_CurrentExpression);
-                } else if (m_IsParsingBlock) {
-                    if (auto * func = dynamic_cast<FunctionExpression *>(m_CurrentBlockExpression)) {
+                if (m_IsParsingBlock) {
+                    if (auto *func = dynamic_cast<FunctionExpression *>(m_BlockExpressions.top())) {
                         func->AddExpression(m_CurrentExpression);
-                    }
-                    else if (auto * ifExpr = dynamic_cast<IfExpression *>(m_CurrentBlockExpression)) {
+                    } else if (auto *ifExpr = dynamic_cast<IfExpression *>(m_BlockExpressions.top())) {
                         ifExpr->AddExpression(m_CurrentExpression);
                     }
                 } else if (m_CurrentExpression) {
-                    m_CurrentBlockExpression = nullptr;
                     tree->AddExpression(m_CurrentExpression);
+
+                    if (m_CurrentExpression->HasBlock()) {
+                        m_BlockExpressions.push(m_CurrentExpression);
+                        m_IsParsingBlock = true;
+                    }
                 }
 
                 m_DataStr = "";
@@ -73,7 +70,11 @@ namespace Hunter::Compiler {
 
                 if (level <= m_CurrentLevel) {
                     m_CurrentLevel = level;
-                    m_IsParsingBlock = false;
+                    m_BlockExpressions.pop();
+
+                    if (m_BlockExpressions.empty()) {
+                        m_IsParsingBlock = false;
+                    }
                 }
 
             }
@@ -85,8 +86,6 @@ namespace Hunter::Compiler {
                     ParseResult result = ParseFunctionHeader(i, input);
                     i = result.Pos+1;
                     expr = result.Expr;
-
-                    m_IsParsingBlock = true;
                 } else if (str == "print") {
                     ParseResult result = ParseFunctionCall(i-1, input);
                     i = result.Pos+1;
@@ -99,8 +98,6 @@ namespace Hunter::Compiler {
                     ParseResult result = ParseIf(i, input);
                     i = result.Pos+1;
                     expr = result.Expr;
-
-                    m_IsParsingBlock = true;
                 } else {
                     std::cerr << "Unknown keyword: " << str << std::endl;
                     exit(1);

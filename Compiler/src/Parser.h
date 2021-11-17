@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <stack>
 
 namespace Hunter::Compiler {
 
@@ -50,7 +51,7 @@ namespace Hunter::Compiler {
     private:
         std::string m_DataStr;
         Expression * m_CurrentExpression = nullptr;
-        Expression * m_CurrentBlockExpression = nullptr;
+        std::stack<Expression *> m_BlockExpressions;
 
         bool m_IsParsingBlock = false;
         int m_CurrentLevel = 0;
