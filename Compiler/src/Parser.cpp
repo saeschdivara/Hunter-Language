@@ -473,11 +473,16 @@ namespace Hunter::Compiler {
                     ParseResult result;
 
                     if (str.starts_with("\"")) {
+
+                        if (!str.ends_with("\"")) {
+                            str.push_back(c);
+                            continue;
+                        }
+
                         result = ParseString(0, str);
                     } else {
                         result = ParseExpression(0, str);
                     }
-
 
                     if (!result.Expr) {
                         std::cerr << "Could not parse expression: " << str << std::endl;
