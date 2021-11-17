@@ -18,13 +18,13 @@ namespace Hunter::Compiler {
 
         std::cout << std::endl << std::endl << "Generate code" << std::endl << "------------" << std::endl;
 
-        auto * module = new llvm::Module("Hunt", m_Context);
+        m_Module = new llvm::Module("Hunt", m_Context);
 
         llvm::Function *hunterFunction = llvm::Function::Create(
                 llvm::FunctionType::get(llvm::Type::getInt32Ty(m_Context), false),
                 llvm::Function::ExternalLinkage,
                 "main",
-                module
+                m_Module
         );
 
         auto *printfFuncType = llvm::FunctionType::get(
@@ -37,48 +37,17 @@ namespace Hunter::Compiler {
                 printfFuncType,
                 llvm::Function::ExternalLinkage,
                 "printf",
-                module
+                m_Module
         );
 
         m_Functions["printf"] = printfFunc;
-
-        auto * simpleFuncType = llvm::FunctionType::get(llvm::Type::getVoidTy(m_Context), false);
 
         llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(m_Context, "EntryBlock", hunterFunction);
         llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
 
         for (const auto &instr : ast->GetInstructions()) {
             if (auto *funcExpr = dynamic_cast<FunctionExpression *>(instr)) {
-                std::string functionName = funcExpr->GetName();
-                llvm::Function * currentFunction;
-
-                if (m_Functions.contains(functionName)) {
-                    currentFunction = m_Functions[functionName];
-                } else {
-                    currentFunction = llvm::Function::Create(
-                            simpleFuncType,
-                            llvm::Function::InternalLinkage,
-                            functionName,
-                            module
-                    );
-
-                    // Create a new basic block to start insertion into.
-                    llvm::BasicBlock::Create(m_Context, "entry", currentFunction);
-
-                    m_Functions[funcExpr->GetName()] = currentFunction;
-                }
-                llvm::IRBuilder<> funcBlockBuilder(&currentFunction->getEntryBlock(), currentFunction->getEntryBlock().begin());
-
-                for (const auto &expr : funcExpr->GetBody()) {
-                    InsertExpression(&funcBlockBuilder, expr);
-                }
-
-                funcBlockBuilder.CreateRetVoid();
-
-                if (functionName == "hunt") {
-                    builder->CreateCall(currentFunction);
-                }
-
+                InsertFunctionExpression(builder, funcExpr);
             } else {
                 InsertExpression(builder, instr);
             }
@@ -88,13 +57,13 @@ namespace Hunter::Compiler {
 
         std::error_code err;
         llvm::raw_ostream *ostream = new llvm::raw_fd_ostream("output.bc", err);
-        llvm::WriteBitcodeToFile(*module, *ostream);
+        llvm::WriteBitcodeToFile(*m_Module, *ostream);
 
-        module->print(llvm::errs(), nullptr);
+        m_Module->print(llvm::errs(), nullptr);
 
         delete ostream;
 
-        return module;
+        return m_Module;
     }
 
     void CodeGenerator::InsertExpression(llvm::IRBuilder<> * builder, Expression *expr) {
@@ -103,6 +72,9 @@ namespace Hunter::Compiler {
         }
         else if (auto *constExpr = dynamic_cast<ConstExpression *>(expr)) {
             InsertConstExpression(builder, constExpr);
+        }
+        else if (auto *ifExpr = dynamic_cast<IfExpression *>(expr)) {
+            InsertIfExpression(builder, ifExpr);
         }
     }
 
@@ -116,6 +88,75 @@ namespace Hunter::Compiler {
                 return builder->getInt32Ty();
             case IntType::i64:
                 return builder->getInt64Ty();
+        }
+    }
+
+    void CodeGenerator::InsertFunctionExpression(llvm::IRBuilder<> *builder, FunctionExpression *funcExpr) {
+        std::string functionName = funcExpr->GetName();
+        llvm::Function * currentFunction;
+
+        if (m_Functions.contains(functionName)) {
+            currentFunction = m_Functions[functionName];
+        } else {
+            auto * simpleFuncType = llvm::FunctionType::get(llvm::Type::getVoidTy(m_Context), false);
+
+            currentFunction = llvm::Function::Create(
+                    simpleFuncType,
+                    llvm::Function::InternalLinkage,
+                    functionName,
+                    m_Module
+            );
+
+            // Create a new basic block to start insertion into.
+            llvm::BasicBlock::Create(m_Context, "entry", currentFunction);
+
+            m_Functions[funcExpr->GetName()] = currentFunction;
+        }
+        llvm::IRBuilder<> funcBlockBuilder(&currentFunction->getEntryBlock(), currentFunction->getEntryBlock().begin());
+
+        for (const auto &expr : funcExpr->GetBody()) {
+            InsertExpression(&funcBlockBuilder, expr);
+        }
+
+        funcBlockBuilder.CreateRetVoid();
+
+        if (functionName == "hunt") {
+            builder->CreateCall(currentFunction);
+        }
+    }
+
+    void CodeGenerator::InsertIfExpression(llvm::IRBuilder<> *builder, IfExpression *ifExpr) {
+        BooleanExpression * condition = dynamic_cast<BooleanExpression *>(ifExpr->GetCondition());
+
+        if (condition->GetOperator() == OperatorType::LogicalEquals) {
+            llvm::Value * compareResult = builder->CreateICmpEQ(
+                GetValueFromExpression(builder, condition->Left()),
+                GetValueFromExpression(builder, condition->Right())
+            );
+
+            llvm::Function * func = builder->GetInsertBlock()->getParent();
+
+            llvm::BasicBlock * thenBlock = llvm::BasicBlock::Create(m_Context, "then");
+            llvm::BasicBlock * elseConditionBlock = llvm::BasicBlock::Create(m_Context, "else");
+            llvm::BasicBlock * afterElseConditionBlock = llvm::BasicBlock::Create(m_Context, "endIf");
+
+            builder->CreateCondBr(compareResult, thenBlock, elseConditionBlock);
+
+            func->getBasicBlockList().push_back(thenBlock);
+            builder->SetInsertPoint(thenBlock);
+            for (const auto &expr : ifExpr->GetBody()) {
+                InsertExpression(builder, expr);
+            }
+
+            builder->CreateBr(afterElseConditionBlock);
+
+            func->getBasicBlockList().push_back(elseConditionBlock);
+            builder->SetInsertPoint(elseConditionBlock);
+            builder->CreateBr(afterElseConditionBlock);
+
+            func->getBasicBlockList().push_back(afterElseConditionBlock);
+            builder->SetInsertPoint(afterElseConditionBlock);
+
         }
     }
 
@@ -205,5 +246,28 @@ namespace Hunter::Compiler {
 
             builder->CreateStore(GetIntValue(builder, intExpr), var);
         }
+    }
+
+    llvm::Value *CodeGenerator::GetValueFromExpression(llvm::IRBuilder<> *builder, Expression * expr) {
+
+        if (auto *intValExpr = dynamic_cast<IntExpression *>(expr)) {
+            return GetIntValue(builder, intValExpr);
+        } else if (auto *identifierExpr = dynamic_cast<IdentifierExpression *>(expr)) {
+            std::string variableName = identifierExpr->GetVariableName();
+            if (!m_Variables.contains(variableName)) {
+                std::cerr << "Could not find variable " << variableName << std::endl;
+                exit(1);
+            }
+
+            Expression *variableExpr = m_VariablesExpression[variableName];
+
+            if (auto *intValExpr = dynamic_cast<IntExpression *>(variableExpr)) {
+                IntType type = intValExpr->GetType();
+                return builder->CreateLoad(GetVariableTypeForInt(builder, type), m_Variables[variableName]);
+            }
+        }
+
+        std::cerr << "Could not map expression to value" << std::endl;
+        exit(1);
     }
 }
