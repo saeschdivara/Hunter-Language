@@ -30,8 +30,18 @@ namespace Hunter::Compiler {
                 if (m_IsParsingBlock) {
                     if (auto *func = dynamic_cast<FunctionExpression *>(m_BlockExpressions.top())) {
                         func->AddExpression(m_CurrentExpression);
+
+                        if (m_CurrentExpression->HasBlock()) {
+                            m_BlockExpressions.push(m_CurrentExpression);
+                            m_IsParsingBlock = true;
+                        }
                     } else if (auto *ifExpr = dynamic_cast<IfExpression *>(m_BlockExpressions.top())) {
                         ifExpr->AddExpression(m_CurrentExpression);
+
+                        if (m_CurrentExpression->HasBlock()) {
+                            m_BlockExpressions.push(m_CurrentExpression);
+                            m_IsParsingBlock = true;
+                        }
                     }
                 } else if (m_CurrentExpression) {
                     tree->AddExpression(m_CurrentExpression);
