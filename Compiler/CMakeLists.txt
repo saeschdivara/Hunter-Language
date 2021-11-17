@@ -29,3 +29,24 @@ endforeach()
 target_link_libraries(Hunter_Compiler ${CONAN_LIBS})  # Specifies what libraries to link, using Conan.
 target_link_libraries(Hunter_Compiler ${llvm_libraries} ${targets})
 
+#########################
+find_package(Catch2 2 REQUIRED)
+
+add_executable(Parser_Test
+        testing/Parser.cpp
+        src/Parser.cpp src/Parser.h
+        src/Expressions.cpp src/Expressions.h
+        )
+
+target_link_libraries(Parser_Test Catch2::Catch2)
+
+target_include_directories(Parser_Test PUBLIC ${LLVM_INCLUDE_DIRS})
+target_compile_definitions(Parser_Test PUBLIC ${LLVM_DEFINITIONS})
+
+target_link_libraries(Parser_Test ${CONAN_LIBS})  # Specifies what libraries to link, using Conan.
+target_link_libraries(Parser_Test ${llvm_libraries} ${targets})
+
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
+include(CTest)
+include(Catch)
+catch_discover_tests(Parser_Test)

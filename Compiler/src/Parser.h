@@ -35,8 +35,6 @@ namespace Hunter::Compiler {
     public:
         AbstractSyntaxTree * Parse(const std::string & input);
 
-    protected:
-
         Expression * ParseLine(const std::string & input);
         ParseResult ParseExpression(int currentPos, const std::string & input);
         ParseResult ParseString(int currentPos, const std::string & input);
