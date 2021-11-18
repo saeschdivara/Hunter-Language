@@ -27,6 +27,11 @@ namespace Hunter::Compiler {
 
                 m_CurrentExpression = ParseLine(m_DataStr);
 
+                if (!m_CurrentExpression) {
+                    std::cerr << "Could not parse valid expression from current line" << std::endl;
+                    exit(1);
+                }
+
                 if (m_IsParsingBlock) {
                     if (auto *func = dynamic_cast<FunctionExpression *>(m_BlockExpressions.top())) {
                         func->AddExpression(m_CurrentExpression);
