@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 #include <vector>
 #include <iostream>
 
@@ -43,6 +44,24 @@ namespace Hunter::Compiler {
                 std::cout << "  ";
             }
         }
+    };
+
+    class BlockExpression : public Expression {
+    public:
+        bool HasBlock() override {
+            return true;
+        }
+
+        void AddExpression(Expression * expr) {
+            m_Body.push_back(expr);
+        }
+
+        std::vector<Expression *> & GetBody() {
+            return m_Body;
+        }
+
+    private:
+        std::vector<Expression *> m_Body;
     };
 
     class PrintExpression : public Expression {
@@ -173,7 +192,7 @@ namespace Hunter::Compiler {
         std::vector<Expression *> m_Parameters;
     };
 
-    class FunctionExpression : public Expression {
+    class FunctionExpression : public BlockExpression {
     public:
         FunctionExpression(std::string name) : m_Name(std::move(name)) {}
         std::string & GetName() { return m_Name; }
@@ -182,32 +201,17 @@ namespace Hunter::Compiler {
             DumpSpaces(level);
             std::cout << "Function Expression: " << GetName() << std::endl;
 
-            for (const auto &subExpr : m_Body) {
+            for (const auto &subExpr : GetBody()) {
                 subExpr->Dump(level+1);
             }
         }
 
-        bool HasBlock() override {
-            return true;
-        }
-
-        void AddExpression(Expression * expr) {
-            m_Body.push_back(expr);
-        }
-
-        std::vector<Expression *> & GetBody() {
-            return m_Body;
-        }
-
     private:
         std::string m_Name;
-        std::vector<Expression *> m_Body;
     };
 
-    class ElseExpression : public Expression {
+    class ElseExpression : public BlockExpression {
     public:
-        ElseExpression() = default;
-
         void Dump(int level) override {
             DumpSpaces(level+1);
             std::cout << "Else Expression: " << std::endl;
@@ -218,24 +222,9 @@ namespace Hunter::Compiler {
                 subExpr->Dump(level+3);
             }
         }
-
-        bool HasBlock() override {
-            return true;
-        }
-
-        void AddExpression(Expression * expr) {
-            m_Body.push_back(expr);
-        }
-
-        std::vector<Expression *> & GetBody() {
-            return m_Body;
-        }
-
-    private:
-        std::vector<Expression *> m_Body;
     };
 
-    class IfExpression : public Expression {
+    class IfExpression : public BlockExpression {
     public:
         IfExpression(Expression * condition) : m_Condition(condition) {}
         Expression * GetCondition() { return m_Condition; }
@@ -259,14 +248,6 @@ namespace Hunter::Compiler {
             }
         }
 
-        bool HasBlock() override {
-            return true;
-        }
-
-        void AddExpression(Expression * expr) {
-            m_Body.push_back(expr);
-        }
-
         void SetElse(ElseExpression * expr) {
             m_Else = expr;
         }
@@ -275,13 +256,44 @@ namespace Hunter::Compiler {
             return m_Else;
         }
 
-        std::vector<Expression *> & GetBody() {
-            return m_Body;
-        }
-
     private:
         Expression * m_Condition;
         ElseExpression * m_Else;
-        std::vector<Expression *> m_Body;
+    };
+
+    class ForLoopExpression : public BlockExpression {
+    public:
+        ForLoopExpression(std::string counterIdentifier, Expression * range)
+            : m_CounterIdentifier(std::move(counterIdentifier)), m_Range(range) {};
+
+        void Dump(int level) override {
+            DumpSpaces(level+1);
+            std::cout << "For loop Expression: " << std::endl;
+
+            DumpSpaces(level+1);
+            std::cout << "  Counter: " << GetCounter() << std::endl;
+
+            DumpSpaces(level+1);
+            std::cout << "  Range: " << std::endl;
+            GetRange()->Dump(level + 3);
+
+            DumpSpaces(level+1);
+            std::cout << "  Body: " << std::endl;
+            for (const auto &subExpr : GetBody()) {
+                subExpr->Dump(level+3);
+            }
+        }
+
+        Expression * GetRange() {
+            return m_Range;
+        }
+
+        std::string & GetCounter() {
+            return m_CounterIdentifier;
+        }
+
+    private:
+        std::string m_CounterIdentifier;
+        Expression * m_Range;
     };
 }

@@ -33,14 +33,7 @@ namespace Hunter::Compiler {
                 }
 
                 if (m_IsParsingBlock) {
-                    if (auto *func = dynamic_cast<FunctionExpression *>(m_BlockExpressions.top())) {
-                        func->AddExpression(m_CurrentExpression);
-
-                        if (m_CurrentExpression->HasBlock()) {
-                            m_BlockExpressions.push(m_CurrentExpression);
-                            m_IsParsingBlock = true;
-                        }
-                    } else if (auto *ifExpr = dynamic_cast<IfExpression *>(m_BlockExpressions.top())) {
+                    if (auto *ifExpr = dynamic_cast<IfExpression *>(m_BlockExpressions.top())) {
 
                         if (auto * elseExpr = dynamic_cast<ElseExpression *>(m_CurrentExpression)) {
                             m_BlockExpressions.pop();
@@ -49,18 +42,14 @@ namespace Hunter::Compiler {
                             ifExpr->AddExpression(m_CurrentExpression);
                         }
 
-                        if (m_CurrentExpression->HasBlock()) {
+                    } else if (auto *blockExpr = dynamic_cast<BlockExpression *>(m_BlockExpressions.top())) {
+                        blockExpr->AddExpression(m_CurrentExpression);
+                    }
 
-                            m_BlockExpressions.push(m_CurrentExpression);
-                            m_IsParsingBlock = true;
-                        }
-                    } else if (auto *elseExpr = dynamic_cast<ElseExpression *>(m_BlockExpressions.top())) {
-                        elseExpr->AddExpression(m_CurrentExpression);
+                    if (m_CurrentExpression->HasBlock()) {
 
-                        if (m_CurrentExpression->HasBlock()) {
-                            m_BlockExpressions.push(m_CurrentExpression);
-                            m_IsParsingBlock = true;
-                        }
+                        m_BlockExpressions.push(m_CurrentExpression);
+                        m_IsParsingBlock = true;
                     }
                 } else {
                     tree->AddExpression(m_CurrentExpression);
@@ -99,7 +88,10 @@ namespace Hunter::Compiler {
 
                 if (level <= m_CurrentLevel) {
                     m_CurrentLevel = level;
-                    m_BlockExpressions.pop();
+
+                    if (!m_BlockExpressions.empty()) {
+                        m_BlockExpressions.pop();
+                    }
 
                     if (m_BlockExpressions.empty()) {
                         m_IsParsingBlock = false;
