@@ -15,6 +15,8 @@ int main() {
 
             if num eq 8 then
                 print("Hello 8\n")
+            else
+                print("Not hello 8\n")
     )";
 
     Hunter::Compiler::AbstractSyntaxTree * ast = parser.Parse(input);
