@@ -1,0 +1,5 @@
+fun hunt()
+    const num = 8
+
+    if num eq 8 then
+        print("Hello 8\n")
