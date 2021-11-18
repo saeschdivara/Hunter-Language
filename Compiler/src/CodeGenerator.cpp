@@ -152,6 +152,13 @@ namespace Hunter::Compiler {
 
             func->getBasicBlockList().push_back(elseConditionBlock);
             builder->SetInsertPoint(elseConditionBlock);
+
+            if (ifExpr->GetElse()) {
+                for (const auto &expr : ifExpr->GetElse()->GetBody()) {
+                    InsertExpression(builder, expr);
+                }
+            }
+
             builder->CreateBr(afterElseConditionBlock);
 
             func->getBasicBlockList().push_back(afterElseConditionBlock);
