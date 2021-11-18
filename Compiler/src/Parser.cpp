@@ -41,14 +41,28 @@ namespace Hunter::Compiler {
                             m_IsParsingBlock = true;
                         }
                     } else if (auto *ifExpr = dynamic_cast<IfExpression *>(m_BlockExpressions.top())) {
-                        ifExpr->AddExpression(m_CurrentExpression);
+
+                        if (auto * elseExpr = dynamic_cast<ElseExpression *>(m_CurrentExpression)) {
+                            m_BlockExpressions.pop();
+                            ifExpr->SetElse(elseExpr);
+                        } else {
+                            ifExpr->AddExpression(m_CurrentExpression);
+                        }
+
+                        if (m_CurrentExpression->HasBlock()) {
+
+                            m_BlockExpressions.push(m_CurrentExpression);
+                            m_IsParsingBlock = true;
+                        }
+                    } else if (auto *elseExpr = dynamic_cast<ElseExpression *>(m_BlockExpressions.top())) {
+                        elseExpr->AddExpression(m_CurrentExpression);
 
                         if (m_CurrentExpression->HasBlock()) {
                             m_BlockExpressions.push(m_CurrentExpression);
                             m_IsParsingBlock = true;
                         }
                     }
-                } else if (m_CurrentExpression) {
+                } else {
                     tree->AddExpression(m_CurrentExpression);
 
                     if (m_CurrentExpression->HasBlock()) {
@@ -95,7 +109,7 @@ namespace Hunter::Compiler {
             }
 
             if (isspace(c) || c == '(') {
-                std::cout << "Word: " << str << std::endl;
+                std::cout << "Word 1: " << str << std::endl;
 
                 if (str == "fun") {
                     ParseResult result = ParseFunctionHeader(i, input);
@@ -125,7 +139,17 @@ namespace Hunter::Compiler {
             str.push_back(c);
         }
 
-        std::cout << "Word: " << str << std::endl;
+        std::cout << "Word 2: " << str << std::endl;
+
+        if (!str.empty()) {
+            // this happens if there is a single keyword like 'else' and there is no space left afterwards
+            if (str == "else") {
+                expr = new ElseExpression();
+            } else {
+                std::cerr << "Unknown keyword was found" << std::endl;
+                exit(1);
+            }
+        }
 
         std::cout << "Level: " << level << std::endl;
 

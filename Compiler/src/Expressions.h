@@ -204,18 +204,13 @@ namespace Hunter::Compiler {
         std::vector<Expression *> m_Body;
     };
 
-    class IfExpression : public Expression {
+    class ElseExpression : public Expression {
     public:
-        IfExpression(Expression * condition) : m_Condition(condition) {}
-        Expression * GetCondition() { return m_Condition; }
+        ElseExpression() = default;
 
         void Dump(int level) override {
             DumpSpaces(level+1);
-            std::cout << "If Expression: " << std::endl;
-
-            DumpSpaces(level+1);
-            std::cout << "  Condition: " << std::endl;
-            GetCondition()->Dump(level+3);
+            std::cout << "Else Expression: " << std::endl;
 
             DumpSpaces(level+1);
             std::cout << "  Body: " << std::endl;
@@ -237,7 +232,56 @@ namespace Hunter::Compiler {
         }
 
     private:
+        std::vector<Expression *> m_Body;
+    };
+
+    class IfExpression : public Expression {
+    public:
+        IfExpression(Expression * condition) : m_Condition(condition) {}
+        Expression * GetCondition() { return m_Condition; }
+
+        void Dump(int level) override {
+            DumpSpaces(level+1);
+            std::cout << "If Expression: " << std::endl;
+
+            DumpSpaces(level+1);
+            std::cout << "  Condition: " << std::endl;
+            GetCondition()->Dump(level+3);
+
+            DumpSpaces(level+1);
+            std::cout << "  Body: " << std::endl;
+            for (const auto &subExpr : GetBody()) {
+                subExpr->Dump(level+3);
+            }
+
+            if (GetElse()) {
+                GetElse()->Dump(level+1);
+            }
+        }
+
+        bool HasBlock() override {
+            return true;
+        }
+
+        void AddExpression(Expression * expr) {
+            m_Body.push_back(expr);
+        }
+
+        void SetElse(ElseExpression * expr) {
+            m_Else = expr;
+        }
+
+        ElseExpression * GetElse() {
+            return m_Else;
+        }
+
+        std::vector<Expression *> & GetBody() {
+            return m_Body;
+        }
+
+    private:
         Expression * m_Condition;
+        ElseExpression * m_Else;
         std::vector<Expression *> m_Body;
     };
 }
