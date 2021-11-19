@@ -620,7 +620,7 @@ namespace Hunter::Compiler {
 
                         result = ParseString(0, str);
                     } else {
-                        result = ParseExpression(0, str);
+                        result = ParseExpression(-1, str);
                     }
 
                     if (!result.Expr) {
