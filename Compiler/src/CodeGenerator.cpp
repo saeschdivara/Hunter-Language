@@ -170,11 +170,12 @@ namespace Hunter::Compiler {
     void CodeGenerator::InsertForLoopExpression(llvm::IRBuilder<> *builder, ForLoopExpression *forExpr) {
         // create loop counter
         if (auto *range = dynamic_cast<RangeExpression *>(forExpr->GetRange())) {
-            llvm::IntegerType * counterType = GetVariableTypeForInt(builder, IntType::i64);
+            IntType intType = IntType::i64;
+            llvm::IntegerType * counterType = GetVariableTypeForInt(builder, intType);
 
             std::string counterName = forExpr->GetCounter();
             // Start the PHI node with an entry for Start.
-            InsertIntExpression(builder, counterName, new IntExpression(IntType::i64, range->GetStart()));
+            InsertIntExpression(builder, counterName, new IntExpression(intType, range->GetStart()));
             llvm::ConstantInt * endValue = llvm::ConstantInt::get(counterType, range->GetEnd());
 
             llvm::Function *currentFunction = builder->GetInsertBlock()->getParent();
@@ -189,14 +190,14 @@ namespace Hunter::Compiler {
             }
 
             // step
-            llvm::Constant * step = llvm::ConstantInt::get(GetVariableTypeForInt(builder, IntType::i64), 1);
+            llvm::Constant * step = llvm::ConstantInt::get(counterType, 1);
 
             llvm::Value *loadedCounter = builder->CreateLoad(counterType, m_Variables[counterName]);
             llvm::Value *nextCounter = builder->CreateAdd(loadedCounter, step, "next-counter");
             builder->CreateStore(nextCounter, m_Variables[counterName]);
 
             llvm::Value * conditionResult = builder->CreateICmpSLE(
-                builder->CreateLoad(GetVariableTypeForInt(builder, IntType::i64), m_Variables[counterName]),
+                builder->CreateLoad(counterType, m_Variables[counterName]),
                 endValue,
                 "loop-condition"
             );
