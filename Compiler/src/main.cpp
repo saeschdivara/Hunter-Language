@@ -9,14 +9,12 @@ int main() {
     Hunter::Compiler::Parser parser;
     Hunter::Compiler::CodeGenerator codeGenerator;
 
+    // todo: handle 1 character variable
+
     std::string input = R"(
         fun hunt()
-            const num = 8
-
-            if num eq 8 then
-                print("Hello 8\n")
-            else
-                print("Not hello 8\n")
+            for counter in 1..10
+                print("Hello #", counter, "\n")
     )";
 
     Hunter::Compiler::AbstractSyntaxTree * ast = parser.Parse(input);
