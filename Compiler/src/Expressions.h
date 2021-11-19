@@ -210,6 +210,22 @@ namespace Hunter::Compiler {
         std::string m_Name;
     };
 
+    class RangeExpression : public Expression {
+    public:
+        RangeExpression(int64_t start, int64_t end) : m_Start(start), m_End(end) {}
+        int64_t GetStart() const { return m_Start; }
+        int64_t GetEnd() const { return m_End; }
+
+        void Dump(int level) override {
+            DumpSpaces(level);
+            std::cout << "Range Expression: " << GetStart() << " - " << GetEnd() << std::endl;
+        }
+
+    private:
+        int64_t m_Start;
+        int64_t m_End;
+    };
+
     class ElseExpression : public BlockExpression {
     public:
         void Dump(int level) override {

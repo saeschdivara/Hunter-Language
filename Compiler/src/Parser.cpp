@@ -119,8 +119,17 @@ namespace Hunter::Compiler {
                     ParseResult result = ParseIf(i, input);
                     i = result.Pos+1;
                     expr = result.Expr;
+                }  else if (str == "for") {
+                    ParseResult result = ParseFor(i, input);
+                    i = result.Pos+1;
+                    expr = result.Expr;
                 } else {
                     std::cerr << "Unknown keyword: " << str << std::endl;
+                    exit(1);
+                }
+
+                if (!expr) {
+                    std::cerr << "Parsing produced invalid expression" << std::endl;
                     exit(1);
                 }
 
@@ -339,6 +348,115 @@ namespace Hunter::Compiler {
         return {
             .Pos = currentPos,
             .Expr = new IfExpression(expr)
+        };
+    }
+
+    ParseResult Parser::ParseFor(int currentPos, const std::string &input) {
+
+        std::string str;
+        std::string counterIdentifier;
+        Expression * range;
+
+        int currentParsingPart = 1;
+
+        for (int i = currentPos; i < input.length(); ++i, currentPos++) {
+            char c = input.at(i);
+
+            if (isspace(c) && !str.empty()) {
+
+                std::cout << "part: " << currentParsingPart << " " << str << std::endl;
+
+                if (currentParsingPart == 1) {
+                    counterIdentifier = str;
+                } else if (currentParsingPart == 2) {
+                    if (str != "in") {
+                        std::cerr << "Between counter and range there has to be \"in\" keyword" << std::endl;
+                        exit(1);
+                    }
+                } else if (currentParsingPart == 3) {
+                    ParseResult result = ParseRange(-1, str);
+
+                    if (!result.Expr) {
+                        std::cerr << "Could not parse range expression" << std::endl;
+                        exit(1);
+                    }
+
+                    range = result.Expr;
+
+                } else {
+                    std::cerr << "After range nothing else is expected" << std::endl;
+                    exit(1);
+                }
+
+                currentParsingPart += 1;
+
+                str = "";
+                continue;
+            } else if (isspace(c)) {
+                continue;
+            }
+
+            str.push_back(c);
+        }
+
+        if (currentParsingPart == 3) {
+            ParseResult result = ParseRange(-1, str);
+
+            if (!result.Expr) {
+                std::cerr << "Could not parse range expression" << std::endl;
+                exit(1);
+            }
+
+            range = result.Expr;
+        }
+
+        std::cout << str << std::endl;
+
+        return {
+            .Pos = currentPos,
+            .Expr = new ForLoopExpression(counterIdentifier, range)
+        };
+    }
+
+    ParseResult Parser::ParseRange(int currentPos, const std::string &input) {
+
+        std::string str;
+        int64_t start = -1;
+        int64_t end = -1;
+
+        for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
+            char c = input.at(i);
+            if (c == '.') {
+
+                std::cout << "Nr: " << c << " -> " << str << std::endl;
+
+                if (!str.empty()) {
+                    if (start == -1) {
+                        start = std::stoll(str);
+                    } else {
+                        end = std::stoll(str);
+                    }
+                }
+
+                str = "";
+                continue;
+            } else if (!isnumber(c)) {
+                std::cerr << "Found not a number in range: " << c << std::endl;
+                exit(1);
+            }
+
+            str.push_back(c);
+        }
+
+        if (!str.empty()) {
+            if (end == -1) {
+                end = std::stoll(str);
+            }
+        }
+
+        return {
+            .Pos = currentPos,
+            .Expr = new RangeExpression(start, end)
         };
     }
 
