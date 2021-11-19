@@ -66,19 +66,19 @@ namespace Hunter::Compiler {
         return m_Module;
     }
 
-    void CodeGenerator::InsertExpression(llvm::IRBuilder<> * builder, Expression *expr) {
+    void CodeGenerator::InsertExpression(llvm::IRBuilder<> *builder, Expression *expr) {
         if (auto *printExpr = dynamic_cast<PrintExpression *>(expr)) {
             InsertPrintExpression(builder, printExpr);
-        }
-        else if (auto *constExpr = dynamic_cast<ConstExpression *>(expr)) {
+        } else if (auto *constExpr = dynamic_cast<ConstExpression *>(expr)) {
             InsertConstExpression(builder, constExpr);
-        }
-        else if (auto *ifExpr = dynamic_cast<IfExpression *>(expr)) {
+        } else if (auto *ifExpr = dynamic_cast<IfExpression *>(expr)) {
             InsertIfExpression(builder, ifExpr);
+        } else if (auto *forExpr = dynamic_cast<ForLoopExpression *>(expr)) {
+            InsertForLoopExpression(builder, forExpr);
         }
     }
 
-    llvm::Type * GetVariableTypeForInt(llvm::IRBuilder<> *builder, IntType type) {
+    llvm::IntegerType *GetVariableTypeForInt(llvm::IRBuilder<> *builder, IntType type) {
         switch (type) {
             case IntType::i8:
                 return builder->getInt8Ty();
@@ -93,12 +93,12 @@ namespace Hunter::Compiler {
 
     void CodeGenerator::InsertFunctionExpression(llvm::IRBuilder<> *builder, FunctionExpression *funcExpr) {
         std::string functionName = funcExpr->GetName();
-        llvm::Function * currentFunction;
+        llvm::Function *currentFunction;
 
         if (m_Functions.contains(functionName)) {
             currentFunction = m_Functions[functionName];
         } else {
-            auto * simpleFuncType = llvm::FunctionType::get(llvm::Type::getVoidTy(m_Context), false);
+            auto *simpleFuncType = llvm::FunctionType::get(llvm::Type::getVoidTy(m_Context), false);
 
             currentFunction = llvm::Function::Create(
                     simpleFuncType,
@@ -126,19 +126,19 @@ namespace Hunter::Compiler {
     }
 
     void CodeGenerator::InsertIfExpression(llvm::IRBuilder<> *builder, IfExpression *ifExpr) {
-        BooleanExpression * condition = dynamic_cast<BooleanExpression *>(ifExpr->GetCondition());
+        BooleanExpression *condition = dynamic_cast<BooleanExpression *>(ifExpr->GetCondition());
 
         if (condition->GetOperator() == OperatorType::LogicalEquals) {
-            llvm::Value * compareResult = builder->CreateICmpEQ(
-                GetValueFromExpression(builder, condition->Left()),
-                GetValueFromExpression(builder, condition->Right())
+            llvm::Value *compareResult = builder->CreateICmpEQ(
+                    GetValueFromExpression(builder, condition->Left()),
+                    GetValueFromExpression(builder, condition->Right())
             );
 
-            llvm::Function * func = builder->GetInsertBlock()->getParent();
+            llvm::Function *func = builder->GetInsertBlock()->getParent();
 
-            llvm::BasicBlock * thenBlock = llvm::BasicBlock::Create(m_Context, "then");
-            llvm::BasicBlock * elseConditionBlock = llvm::BasicBlock::Create(m_Context, "else");
-            llvm::BasicBlock * afterElseConditionBlock = llvm::BasicBlock::Create(m_Context, "endIf");
+            llvm::BasicBlock *thenBlock = llvm::BasicBlock::Create(m_Context, "then");
+            llvm::BasicBlock *elseConditionBlock = llvm::BasicBlock::Create(m_Context, "else");
+            llvm::BasicBlock *afterElseConditionBlock = llvm::BasicBlock::Create(m_Context, "endIf");
 
             builder->CreateCondBr(compareResult, thenBlock, elseConditionBlock);
 
@@ -167,6 +167,55 @@ namespace Hunter::Compiler {
         }
     }
 
+    void CodeGenerator::InsertForLoopExpression(llvm::IRBuilder<> *builder, ForLoopExpression *forExpr) {
+        // create loop counter
+        if (auto *range = dynamic_cast<RangeExpression *>(forExpr->GetRange())) {
+            llvm::IntegerType * counterType = GetVariableTypeForInt(builder, IntType::i64);
+
+            std::string counterName = forExpr->GetCounter();
+            // Start the PHI node with an entry for Start.
+            InsertIntExpression(builder, counterName, new IntExpression(IntType::i64, range->GetStart()));
+            llvm::ConstantInt * endValue = llvm::ConstantInt::get(counterType, range->GetEnd());
+
+            llvm::Function *currentFunction = builder->GetInsertBlock()->getParent();
+            llvm::BasicBlock *loopBlock = llvm::BasicBlock::Create(m_Context, "loop", currentFunction);
+
+            builder->CreateBr(loopBlock);
+            builder->SetInsertPoint(loopBlock);
+
+            // body
+            for (const auto &expr : forExpr->GetBody()) {
+                InsertExpression(builder, expr);
+            }
+
+            // step
+            llvm::Constant * step = llvm::ConstantInt::get(GetVariableTypeForInt(builder, IntType::i64), 1);
+
+            llvm::Value *loadedCounter = builder->CreateLoad(counterType, m_Variables[counterName]);
+            llvm::Value *nextCounter = builder->CreateAdd(loadedCounter, step, "next-counter");
+            builder->CreateStore(nextCounter, m_Variables[counterName]);
+
+            llvm::Value * conditionResult = builder->CreateICmpSLE(
+                builder->CreateLoad(GetVariableTypeForInt(builder, IntType::i64), m_Variables[counterName]),
+                endValue,
+                "loop-condition"
+            );
+            // Create the "after loop" block and insert it.
+            llvm::BasicBlock *afterLoopBlock = llvm::BasicBlock::Create(m_Context, "afterloop", currentFunction);
+
+            // Insert the conditional branch into the end of LoopEndBB.
+            builder->CreateCondBr(conditionResult, loopBlock, afterLoopBlock);
+
+            // Any new code will be inserted in AfterBB.
+            builder->SetInsertPoint(afterLoopBlock);
+            m_Variables.erase(counterName);
+            m_VariablesExpression.erase(counterName);
+        } else {
+            std::cerr << "Unknown expression type for range" << std::endl;
+            exit(1);
+        }
+    }
+
     void CodeGenerator::InsertPrintExpression(llvm::IRBuilder<> *builder, PrintExpression *printExpr) {
 
         if (auto *funcCallExpr = dynamic_cast<FunctionCallExpression *>(printExpr->GetInput())) {
@@ -187,15 +236,15 @@ namespace Hunter::Compiler {
                         exit(1);
                     }
 
-                    Expression * variableExpr = m_VariablesExpression[variableName];
+                    Expression *variableExpr = m_VariablesExpression[variableName];
 
                     if (dynamic_cast<StringExpression *>(variableExpr)) {
                         ops.push_back(builder->CreateLoad(builder->getInt8PtrTy(), m_Variables[variableName]));
                         formatString += "%s";
-                    }
-                    else if (auto * intValExpr = dynamic_cast<IntExpression *>(variableExpr)) {
+                    } else if (auto *intValExpr = dynamic_cast<IntExpression *>(variableExpr)) {
                         IntType type = intValExpr->GetType();
-                        auto * loadExpr = builder->CreateLoad(GetVariableTypeForInt(builder, type), m_Variables[variableName]);
+                        auto *loadExpr = builder->CreateLoad(GetVariableTypeForInt(builder, type),
+                                                             m_Variables[variableName]);
                         ops.push_back(loadExpr);
 
                         if (type == IntType::i64) {
@@ -215,7 +264,7 @@ namespace Hunter::Compiler {
         }
     }
 
-    llvm::Constant * GetIntValue(llvm::IRBuilder<> *builder, IntExpression * expr) {
+    llvm::Constant *GetIntValue(llvm::IRBuilder<> *builder, IntExpression *expr) {
         switch (expr->GetType()) {
             case IntType::i8:
                 return builder->getInt8(expr->GetValue());
@@ -230,32 +279,36 @@ namespace Hunter::Compiler {
 
     void CodeGenerator::InsertConstExpression(llvm::IRBuilder<> *builder, ConstExpression *constExpr) {
         std::string variableName = constExpr->GetVariableName();
-        Expression * value = constExpr->GetValue();
+        Expression *value = constExpr->GetValue();
 
         if (m_Variables.contains(variableName)) {
             std::cerr << "Variable " << variableName << " was already defined" << std::endl;
             exit(1);
         }
-        
+
         if (auto *strExpr = dynamic_cast<StringExpression *>(value)) {
             llvm::GlobalVariable *strData = builder->CreateGlobalString(llvm::StringRef(strExpr->GetString()));
-            auto * var = builder->CreateAlloca(builder->getInt8PtrTy(), nullptr, variableName);
+            auto *var = builder->CreateAlloca(builder->getInt8PtrTy(), nullptr, variableName);
 
             m_Variables[variableName] = var;
             m_VariablesExpression[variableName] = value;
 
             builder->CreateStore(strData, var);
-        }
-        else if (auto *intExpr = dynamic_cast<IntExpression *>(value)) {
-            auto * var = builder->CreateAlloca(GetVariableTypeForInt(builder, intExpr->GetType()), nullptr, variableName);
-            m_Variables[variableName] = var;
-            m_VariablesExpression[variableName] = value;
-
-            builder->CreateStore(GetIntValue(builder, intExpr), var);
+        } else if (auto *intExpr = dynamic_cast<IntExpression *>(value)) {
+            InsertIntExpression(builder, variableName, intExpr);
         }
     }
 
-    llvm::Value *CodeGenerator::GetValueFromExpression(llvm::IRBuilder<> *builder, Expression * expr) {
+    void CodeGenerator::InsertIntExpression(llvm::IRBuilder<> *builder, const std::string &variableName,
+                                            IntExpression *intExpr) {
+        auto *var = builder->CreateAlloca(GetVariableTypeForInt(builder, intExpr->GetType()), nullptr, variableName);
+        m_Variables[variableName] = var;
+        m_VariablesExpression[variableName] = intExpr;
+
+        builder->CreateStore(GetIntValue(builder, intExpr), var);
+    }
+
+    llvm::Value *CodeGenerator::GetValueFromExpression(llvm::IRBuilder<> *builder, Expression *expr) {
 
         if (auto *intValExpr = dynamic_cast<IntExpression *>(expr)) {
             return GetIntValue(builder, intValExpr);

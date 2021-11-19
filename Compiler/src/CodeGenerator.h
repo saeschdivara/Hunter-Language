@@ -16,8 +16,10 @@ namespace Hunter::Compiler {
     class Expression;
     class FunctionExpression;
     class IfExpression;
+    class ForLoopExpression;
     class ConstExpression;
     class PrintExpression;
+    class IntExpression;
     class AbstractSyntaxTree;
 
     class CodeGenerator {
@@ -28,8 +30,10 @@ namespace Hunter::Compiler {
         void InsertExpression(llvm::IRBuilder<> *builder, Expression * expr);
         void InsertFunctionExpression(llvm::IRBuilder<> *builder, FunctionExpression *funcExpr);
         void InsertIfExpression(llvm::IRBuilder<> *builder, IfExpression *ifExpr);
+        void InsertForLoopExpression(llvm::IRBuilder<> *builder, ForLoopExpression *forExpr);
         void InsertPrintExpression(llvm::IRBuilder<> *builder, PrintExpression *constExpr);
         void InsertConstExpression(llvm::IRBuilder<> *builder, ConstExpression *constExpr);
+        void InsertIntExpression(llvm::IRBuilder<> *builder, const std::string & variableName, IntExpression *intExpr);
 
         llvm::Value * GetValueFromExpression(llvm::IRBuilder<> *builder, Expression * expr);
 
