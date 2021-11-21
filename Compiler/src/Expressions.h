@@ -19,8 +19,17 @@ namespace Hunter::Compiler {
     enum class OperatorType {
         NoOperator = 0,
 
+        MathPlus,
+        MathMinus,
+        MathMultiply,
+        MathDivide,
+
         LogicalEquals,
         LogicalNot,
+        LogicalLower,
+        LogicalLowerEquals,
+        LogicalGreater,
+        LogicalGreaterEquals,
 
         BitXor,
         BitOr,
@@ -110,6 +119,40 @@ namespace Hunter::Compiler {
         Expression * m_Value;
     };
 
+    class LetExpression : public Expression {
+    public:
+        LetExpression(std::string name, Expression * value) : m_VariableName(std::move(name)), m_Value(value) {}
+        std::string & GetVariableName() { return m_VariableName; }
+        Expression * GetValue() { return m_Value; }
+
+        void Dump(int level) override {
+            DumpSpaces(level);
+            std::cout << "Let Expression: " << GetVariableName() << " := " << std::endl;
+            GetValue()->Dump(level+1);
+        }
+
+    private:
+        std::string m_VariableName;
+        Expression * m_Value;
+    };
+
+    class VariableMutationExpression : public Expression {
+    public:
+        VariableMutationExpression(std::string name, Expression * value) : m_VariableName(std::move(name)), m_Value(value) {}
+        std::string & GetVariableName() { return m_VariableName; }
+        Expression * GetValue() { return m_Value; }
+
+        void Dump(int level) override {
+            DumpSpaces(level);
+            std::cout << "Var Mutation Expression: " << GetVariableName() << " := " << std::endl;
+            GetValue()->Dump(level+1);
+        }
+
+    private:
+        std::string m_VariableName;
+        Expression * m_Value;
+    };
+
     class BooleanExpression : public Expression {
     public:
         BooleanExpression(OperatorType operatorType, Expression * leftExpression, Expression * rightExpression)
@@ -122,6 +165,47 @@ namespace Hunter::Compiler {
         void Dump(int level) override {
             DumpSpaces(level);
             std::cout << "Boolean Expression: " << std::endl;
+
+            if (GetOperandsNumber(GetOperator()) == 1) {
+                DumpSpaces(level+1);
+                std::cout << GetOperatorString(GetOperator()) << std::endl;
+                Left()->Dump(level+1);
+            }
+
+            else if (GetOperandsNumber(GetOperator()) == 2) {
+                Left()->Dump(level+1);
+                DumpSpaces(level+1);
+                std::cout << GetOperatorString(GetOperator()) << std::endl;
+                Right()->Dump(level+1);
+            }
+        }
+
+    private:
+        OperatorType m_Operator;
+        Expression * m_Left;
+        Expression * m_Right;
+    };
+
+    class OperationExpression : public Expression {
+    public:
+        OperationExpression(OperatorType operatorType)
+            : m_Operator(operatorType), m_Left(nullptr), m_Right(nullptr) {}
+
+        OperatorType GetOperator() { return m_Operator; }
+        Expression * Left() { return m_Left; }
+        Expression * Right() { return m_Right; }
+
+        void SetLeft(Expression *left) {
+            m_Left = left;
+        }
+
+        void SetRight(Expression *right) {
+            m_Right = right;
+        }
+
+        void Dump(int level) override {
+            DumpSpaces(level);
+            std::cout << "Operation Expression: " << std::endl;
 
             if (GetOperandsNumber(GetOperator()) == 1) {
                 DumpSpaces(level+1);
@@ -275,6 +359,30 @@ namespace Hunter::Compiler {
     private:
         Expression * m_Condition;
         ElseExpression * m_Else;
+    };
+
+    class WhileExpression : public BlockExpression {
+    public:
+        WhileExpression(Expression * condition) : m_Condition(condition) {}
+        Expression * GetCondition() { return m_Condition; }
+
+        void Dump(int level) override {
+            DumpSpaces(level+1);
+            std::cout << "While Expression: " << std::endl;
+
+            DumpSpaces(level+1);
+            std::cout << "  Condition: " << std::endl;
+            GetCondition()->Dump(level+3);
+
+            DumpSpaces(level+1);
+            std::cout << "  Body: " << std::endl;
+            for (const auto &subExpr : GetBody()) {
+                subExpr->Dump(level+3);
+            }
+        }
+
+    private:
+        Expression * m_Condition;
     };
 
     class ForLoopExpression : public BlockExpression {

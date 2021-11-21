@@ -112,20 +112,37 @@ namespace Hunter::Compiler {
                     i = result.Pos+1;
                     expr = new PrintExpression(result.Expr);
                 } else if (str == "const") {
-                    ParseResult result = ParseConst(i, input);
+                    ParseResult result = ParseVariableDeclaration(i, input, VariableHandlingType::Const);
+                    i = result.Pos+1;
+                    expr = result.Expr;
+                } else if (str == "let") {
+                    ParseResult result = ParseVariableDeclaration(i, input, VariableHandlingType::Let);
                     i = result.Pos+1;
                     expr = result.Expr;
                 }  else if (str == "if") {
                     ParseResult result = ParseIf(i, input);
                     i = result.Pos+1;
                     expr = result.Expr;
+                }   else if (str == "while") {
+                    ParseResult result = ParseBoolean(i, input);
+                    i = result.Pos+1;
+                    expr = new WhileExpression(result.Expr);
                 }  else if (str == "for") {
                     ParseResult result = ParseFor(i, input);
                     i = result.Pos+1;
                     expr = result.Expr;
                 } else {
-                    std::cerr << "Unknown keyword: " << str << std::endl;
-                    exit(1);
+
+                    ParseResult result = ParseIdentifier(-1, str);
+                    if (result.Expr) {
+                        result = ParseVariableDeclaration(i-str.length()-1, input, VariableHandlingType::Assign);
+                        expr = result.Expr;
+                        i = result.Pos+1;
+                    } else {
+                        std::cerr << "Unknown keyword: " << str << std::endl;
+                        exit(1);
+                    }
+
                 }
 
                 if (!expr) {
@@ -231,12 +248,113 @@ namespace Hunter::Compiler {
         }
 
         if (!expr) {
-            std::cerr << "Could not parse valid expression from " << input << std::endl;
-            exit(1);
+            OperatorType operatorType = GetOperatorFromString(str);
+
+            if (operatorType != OperatorType::NoOperator) {
+                expr = new OperationExpression(operatorType);
+            } else {
+                std::cerr << "Could not parse valid expression from " << input << std::endl;
+                exit(1);
+            }
+
         }
 
         return {
             .Pos = currentPos+1,
+            .Expr = expr
+        };
+    }
+
+    ParseResult Parser::ParseFullExpression(int currentPos, const std::string &input) {
+        std::vector<Expression *> ops;
+        std::string str;
+
+        for (int i = currentPos; i < input.length(); ++i, currentPos++) {
+            char c = input.at(i);
+
+            if (isspace(c) && !str.empty()) {
+                std::cout << "Current expr: " << str << std::endl;
+
+                ParseResult result = ParseExpression(-1, str);
+
+                if (!result.Expr) {
+                    std::cerr << "Could not parse expression" << std::endl;
+                    exit(1);
+                }
+
+                auto * operationExpr = dynamic_cast<OperationExpression *>(result.Expr);
+                if (operationExpr) {
+                    if (GetOperandsNumber(operationExpr->GetOperator()) == 2) {
+                        if (ops.empty()) {
+                            std::cerr << "Operation " << GetOperatorString(operationExpr->GetOperator()) << " expects operand befor its use" << std::endl;
+                            exit(1);
+                        } else {
+                            operationExpr->SetLeft(ops.at(0));
+                            ops.pop_back();
+                        }
+                    }
+
+                    ops.push_back(result.Expr);
+                } else if (!ops.empty() && (operationExpr = dynamic_cast<OperationExpression *>(ops.at(0)))) {
+                    if (GetOperandsNumber(operationExpr->GetOperator()) == 2) {
+                        operationExpr->SetRight(result.Expr);
+                    } else {
+                        operationExpr->SetLeft(result.Expr);
+                    }
+                } else {
+                    ops.push_back(result.Expr);
+                }
+
+                str = "";
+                continue;
+            } else if (isspace(c)) {
+                continue;
+            }
+
+            str.push_back(c);
+        }
+
+        if (!str.empty()) {
+            std::cout << "Current expr: " << str << std::endl;
+            ParseResult result = ParseExpression(-1, str);
+
+            if (!result.Expr) {
+                std::cerr << "Could not parse expression" << std::endl;
+                exit(1);
+            }
+
+            auto * operationExpr = dynamic_cast<OperationExpression *>(result.Expr);
+            if (operationExpr) {
+                if (GetOperandsNumber(operationExpr->GetOperator()) == 2) {
+                    if (ops.empty()) {
+                        std::cerr << "Operation " << GetOperatorString(operationExpr->GetOperator()) << " expects operand befor its use" << std::endl;
+                        exit(1);
+                    } else {
+                        operationExpr->SetLeft(ops.at(0));
+                        ops.pop_back();
+                    }
+                }
+
+                ops.push_back(result.Expr);
+            } else if (!ops.empty() && (operationExpr = dynamic_cast<OperationExpression *>(ops.at(0)))) {
+                if (GetOperandsNumber(operationExpr->GetOperator()) == 2) {
+                    operationExpr->SetRight(result.Expr);
+                } else {
+                    operationExpr->SetLeft(result.Expr);
+                }
+            } else {
+                ops.push_back(result.Expr);
+            }
+        }
+
+        Expression * expr = nullptr;
+
+        if (ops.size() == 1) {
+            expr = ops.at(0);
+        }
+
+        return {
+            .Pos = currentPos,
             .Expr = expr
         };
     }
@@ -471,7 +589,7 @@ namespace Hunter::Compiler {
         for (int i = currentPos; i < input.length(); ++i, currentPos++) {
             char c = input.at(i);
 
-            if (isspace(c)) {
+            if (isspace(c) && !str.empty()) {
                 OperatorType operatorType = GetOperatorFromString(str);
                 if (operatorType != OperatorType::NoOperator) {
                     currentOperator = operatorType;
@@ -522,7 +640,7 @@ namespace Hunter::Compiler {
         };
     }
 
-    ParseResult Parser::ParseConst(int currentPos, const std::string &input) {
+    ParseResult Parser::ParseVariableDeclaration(int currentPos, const std::string &input, VariableHandlingType handlingType) {
 
         std::string str;
         std::string variableName;
@@ -541,7 +659,7 @@ namespace Hunter::Compiler {
             } else if (variableName.empty() && !isParsingVariable) {
                 isParsingVariable = true;
             } else if (!variableName.empty() && c == '=') {
-                ParseResult result = ParseExpression(currentPos+1, input);
+                ParseResult result = ParseFullExpression(currentPos+2, input);
                 value = result.Expr;
                 currentPos = result.Pos+1;
             }
@@ -552,13 +670,22 @@ namespace Hunter::Compiler {
         }
 
         if (!value) {
-            std::cerr << "Could not parse constant value" << std::endl;
+            std::cerr << "Could not parse variable value" << std::endl;
             exit(1);
+        }
+
+        Expression * expr;
+        if (handlingType == VariableHandlingType::Const) {
+            expr = new ConstExpression(variableName, value);
+        } else if (handlingType == VariableHandlingType::Let) {
+            expr = new LetExpression(variableName, value);
+        } else if (handlingType == VariableHandlingType::Assign) {
+            expr = new VariableMutationExpression(variableName, value);
         }
 
         return {
                 .Pos = currentPos,
-                .Expr = new ConstExpression(variableName, value)
+                .Expr = expr
         };
     }
 

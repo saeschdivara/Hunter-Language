@@ -25,6 +25,30 @@ namespace Hunter::Compiler {
         else if (str == "not") {
             return OperatorType::LogicalNot;
         }
+        else if (str == "<") {
+            return OperatorType::LogicalLower;
+        }
+        else if (str == "<=") {
+            return OperatorType::LogicalLowerEquals;
+        }
+        else if (str == ">") {
+            return OperatorType::LogicalGreater;
+        }
+        else if (str == ">=") {
+            return OperatorType::LogicalGreaterEquals;
+        }
+        else if (str == "+") {
+            return OperatorType::MathPlus;
+        }
+        else if (str == "-") {
+            return OperatorType::MathMinus;
+        }
+        else if (str == "*") {
+            return OperatorType::MathMultiply;
+        }
+        else if (str == "/") {
+            return OperatorType::MathDivide;
+        }
         else if (str == "|") {
             return OperatorType::BitOr;
         }
@@ -54,6 +78,16 @@ namespace Hunter::Compiler {
                 return 2;
             case OperatorType::BitXor:
                 return 2;
+            case OperatorType::MathPlus:
+                return 2;
+            case OperatorType::MathMinus:
+                return 2;
+            case OperatorType::MathMultiply:
+                return 2;
+            case OperatorType::MathDivide:
+                return 2;
+            default:
+                return 0;
         }
     }
 
@@ -65,6 +99,14 @@ namespace Hunter::Compiler {
                 return "eq";
             case OperatorType::LogicalNot:
                 return "not";
+            case OperatorType::MathPlus:
+                return "+";
+            case OperatorType::MathMinus:
+                return "-";
+            case OperatorType::MathMultiply:
+                return "*";
+            case OperatorType::MathDivide:
+                return "/";
             case OperatorType::BitNot:
                 return "~";
             case OperatorType::BitOr:

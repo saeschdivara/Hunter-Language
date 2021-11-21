@@ -31,19 +31,26 @@ namespace Hunter::Compiler {
         Expression * Expr;
     };
 
+    enum class VariableHandlingType {
+        Const,
+        Let,
+        Assign
+    };
+
     class Parser {
     public:
         AbstractSyntaxTree * Parse(const std::string & input);
 
         Expression * ParseLine(const std::string & input);
         ParseResult ParseExpression(int currentPos, const std::string & input);
+        ParseResult ParseFullExpression(int currentPos, const std::string & input);
         ParseResult ParseString(int currentPos, const std::string & input);
         ParseResult ParseFunctionHeader(int currentPos, const std::string & input);
         ParseResult ParseIf(int currentPos, const std::string & input);
         ParseResult ParseFor(int currentPos, const std::string & input);
         ParseResult ParseRange(int currentPos, const std::string & input);
         ParseResult ParseBoolean(int currentPos, const std::string & input);
-        ParseResult ParseConst(int currentPos, const std::string & input);
+        ParseResult ParseVariableDeclaration(int currentPos, const std::string & input, VariableHandlingType handlingType);
         ParseResult ParseInt(int currentPos, const std::string & input);
         ParseResult ParseFunctionCall(int currentPos, const std::string & input);
         ParseResult ParseIdentifier(int currentPos, const std::string & input);

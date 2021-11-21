@@ -13,8 +13,10 @@ int main() {
 
     std::string input = R"(
         fun hunt()
-            for counter in 1..10
-                print("Hello #", counter, "\n")
+            let foo = 1
+            while foo < 10
+                print("While #", foo, "\n")
+                foo = foo + 1
     )";
 
     Hunter::Compiler::AbstractSyntaxTree * ast = parser.Parse(input);
