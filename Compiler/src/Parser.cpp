@@ -630,8 +630,34 @@ namespace Hunter::Compiler {
                 str = "";
                 continue;
             }
+            else if (isspace(c)) {
+                continue;
+            }
 
             str.push_back(c);
+        }
+
+        ParseResult result = ParseExpression(-1, str);
+
+        if (currentOperator != OperatorType::NoOperator) {
+            currentOperand += 1;
+
+            if (currentOperand == operandsNumber) {
+
+                if (operandsNumber == 1) {
+                    resultExpr = new BooleanExpression(currentOperator, result.Expr, nullptr);
+                }
+                else if (operandsNumber == 2) {
+                    resultExpr = new BooleanExpression(currentOperator, resultExpr, result.Expr);
+                }
+
+                currentOperator = OperatorType::NoOperator;
+                operandsNumber = 0;
+                currentOperand = 0;
+            }
+        }
+        else {
+            resultExpr = result.Expr;
         }
 
         return {

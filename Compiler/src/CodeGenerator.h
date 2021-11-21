@@ -14,10 +14,14 @@ namespace llvm {
 namespace Hunter::Compiler {
 
     class Expression;
+    class BooleanExpression;
     class FunctionExpression;
     class IfExpression;
     class ForLoopExpression;
+    class WhileExpression;
     class ConstExpression;
+    class LetExpression;
+    class VariableMutationExpression;
     class PrintExpression;
     class IntExpression;
     class AbstractSyntaxTree;
@@ -31,11 +35,16 @@ namespace Hunter::Compiler {
         void InsertFunctionExpression(llvm::IRBuilder<> *builder, FunctionExpression *funcExpr);
         void InsertIfExpression(llvm::IRBuilder<> *builder, IfExpression *ifExpr);
         void InsertForLoopExpression(llvm::IRBuilder<> *builder, ForLoopExpression *forExpr);
+        void InsertWhileLoopExpression(llvm::IRBuilder<> *builder, WhileExpression *whileExpr);
         void InsertPrintExpression(llvm::IRBuilder<> *builder, PrintExpression *constExpr);
         void InsertConstExpression(llvm::IRBuilder<> *builder, ConstExpression *constExpr);
+        void InsertLetExpression(llvm::IRBuilder<> *builder, LetExpression *letExpr);
+        void InsertVarMutationExpression(llvm::IRBuilder<> *builder, VariableMutationExpression *varMutExpr);
         void InsertIntExpression(llvm::IRBuilder<> *builder, const std::string & variableName, IntExpression *intExpr);
 
         llvm::Value * GetValueFromExpression(llvm::IRBuilder<> *builder, Expression * expr);
+        llvm::Value * GetVariableValue(llvm::IRBuilder<> *builder, const std::string & variableName);
+        llvm::Value * GetConditionFromExpression(llvm::IRBuilder<> *builder, BooleanExpression * condition);
 
     private:
         // make sure it lives as long as the module is used

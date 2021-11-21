@@ -70,6 +70,14 @@ namespace Hunter::Compiler {
                 return 2;
             case OperatorType::LogicalNot:
                 return 1;
+            case OperatorType::LogicalLower:
+                return 2;
+            case OperatorType::LogicalLowerEquals:
+                return 2;
+            case OperatorType::LogicalGreater:
+                return 2;
+            case OperatorType::LogicalGreaterEquals:
+                return 2;
             case OperatorType::BitNot:
                 return 1;
             case OperatorType::BitOr:
@@ -99,6 +107,14 @@ namespace Hunter::Compiler {
                 return "eq";
             case OperatorType::LogicalNot:
                 return "not";
+            case OperatorType::LogicalLower:
+                return "<";
+            case OperatorType::LogicalLowerEquals:
+                return "<=";
+            case OperatorType::LogicalGreater:
+                return ">";
+            case OperatorType::LogicalGreaterEquals:
+                return ">=";
             case OperatorType::MathPlus:
                 return "+";
             case OperatorType::MathMinus:

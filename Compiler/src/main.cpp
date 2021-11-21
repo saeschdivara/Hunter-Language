@@ -14,7 +14,7 @@ int main() {
     std::string input = R"(
         fun hunt()
             let foo = 1
-            while foo < 10
+            while foo <= 10
                 print("While #", foo, "\n")
                 foo = foo + 1
     )";
