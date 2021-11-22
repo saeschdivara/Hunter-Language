@@ -3,7 +3,6 @@
 #include "Compiler.h"
 #include <iostream>
 #include <fstream>
-#include <sstream>
 
 // https://llvm.org/docs/GettingStarted.html#llvm-examples
 

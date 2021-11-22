@@ -59,7 +59,7 @@ namespace Hunter::Compiler {
         llvm::raw_ostream *ostream = new llvm::raw_fd_ostream("output.bc", err);
         llvm::WriteBitcodeToFile(*m_Module, *ostream);
 
-        m_Module->print(llvm::errs(), nullptr);
+        m_Module->print(llvm::outs(), nullptr);
 
         delete ostream;
 
