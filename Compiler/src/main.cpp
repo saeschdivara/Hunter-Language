@@ -1,23 +1,35 @@
 #include "Parser.h"
 #include "CodeGenerator.h"
 #include "Compiler.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 // https://llvm.org/docs/GettingStarted.html#llvm-examples
 
-int main() {
+
+std::string readFileIntoString(const std::string& path) {
+    std::ifstream input_file(path);
+    if (!input_file.is_open()) {
+        std::cerr << "Could not open the file - '" << path << "'" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    return std::string((std::istreambuf_iterator<char>(input_file)), std::istreambuf_iterator<char>());
+}
+
+int main(int argc, const char ** argv) {
+
+    if (argc < 2) {
+        std::cerr << "Did not find parameter for file" << std::endl;
+        exit(1);
+    }
 
     Hunter::Compiler::Parser parser;
     Hunter::Compiler::CodeGenerator codeGenerator;
 
     // todo: handle 1 character variable
 
-    std::string input = R"(
-        fun hunt()
-            let foo = 1
-            while foo <= 10
-                print("While #", foo, "\n")
-                foo = foo + 1
-    )";
+    std::string input = readFileIntoString(std::string(argv[1]));
 
     Hunter::Compiler::AbstractSyntaxTree * ast = parser.Parse(input);
     ast->Dump();
