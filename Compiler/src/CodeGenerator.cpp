@@ -43,7 +43,7 @@ namespace Hunter::Compiler {
         m_Functions["printf"] = printfFunc;
 
         llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(m_Context, "EntryBlock", hunterFunction);
-        llvm::IRBuilder<> *builder = new llvm::IRBuilder<>(entryBlock);
+        auto *builder = new llvm::IRBuilder<>(entryBlock);
 
         for (const auto &instr : ast->GetInstructions()) {
             if (auto *funcExpr = dynamic_cast<FunctionExpression *>(instr)) {
