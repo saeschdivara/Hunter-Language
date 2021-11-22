@@ -49,6 +49,17 @@ TEST_CASE( "Simple instructions are parsed", "[parser]" ) {
         REQUIRE( intExpr->GetValue() == 1 );
     }
 
+    SECTION("function declaration with parameter instruction") {
+        Parser parser;
+
+        auto * expr = parser.ParseLine("fun foo(num: i8)");
+        REQUIRE( dynamic_cast<FunctionExpression *>(expr) );
+
+        auto * funcExpr = dynamic_cast<FunctionExpression *>(expr);
+        REQUIRE( funcExpr->GetName() == "foo" );
+        REQUIRE( funcExpr->GetParameters().size() == 1 );
+    }
+
     SECTION("function call instruction") {
         Parser parser;
 

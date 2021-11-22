@@ -285,22 +285,52 @@ namespace Hunter::Compiler {
         std::vector<Expression *> m_Parameters;
     };
 
+    class ParameterExpression : public Expression {
+    public:
+        ParameterExpression(std::string name) : m_Name(std::move(name)) {}
+
+        std::string & GetName() { return m_Name; }
+
+        void Dump(int level) override {
+            DumpSpaces(level);
+            std::cout << "Parameter Expression: " << GetName() << std::endl;
+        }
+
+    private:
+        std::string m_Name;
+    };
+
     class FunctionExpression : public BlockExpression {
     public:
-        FunctionExpression(std::string name) : m_Name(std::move(name)) {}
+        FunctionExpression(std::string name, std::vector<ParameterExpression *>  params)
+            : m_Name(std::move(name)), m_Parameters(std::move(params)) {}
+
         std::string & GetName() { return m_Name; }
+
+        const std::vector<ParameterExpression *> &GetParameters() const {
+            return m_Parameters;
+        }
 
         void Dump(int level) override {
             DumpSpaces(level);
             std::cout << "Function Expression: " << GetName() << std::endl;
 
+            DumpSpaces(level+1);
+            std::cout << "Parameters:" << std::endl;
+            for (const auto &subExpr : GetParameters()) {
+                subExpr->Dump(level+2);
+            }
+
+            DumpSpaces(level+1);
+            std::cout << "Body:" << std::endl;
             for (const auto &subExpr : GetBody()) {
-                subExpr->Dump(level+1);
+                subExpr->Dump(level+2);
             }
         }
 
     private:
         std::string m_Name;
+        std::vector<ParameterExpression *> m_Parameters;
     };
 
     class RangeExpression : public Expression {

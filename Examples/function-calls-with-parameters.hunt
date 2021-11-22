@@ -1,0 +1,10 @@
+fun advanced_function(number: i8, str: string)
+  print("Hello from advanced_function\n")
+  print("Number: ", number, "\n")
+  print("String: ", str, "\n")
+
+fun hunt()
+  print("Hello from hunt before advanced_function\n")
+  const my_str = "Foo hello"
+  advanced_function(8, my_str)
+  print("Hello from hunt after advanced_function\n")

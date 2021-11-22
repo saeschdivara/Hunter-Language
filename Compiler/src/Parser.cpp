@@ -433,7 +433,7 @@ namespace Hunter::Compiler {
 
         return {
             .Pos = currentPos,
-            .Expr = new FunctionExpression(functionName)
+            .Expr = new FunctionExpression(functionName, {})
         };
     }
 
