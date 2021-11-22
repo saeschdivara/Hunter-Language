@@ -1,7 +1,7 @@
 fun simple_function()
-  print("Hello from simple_function")
+  print("Hello from simple_function\n")
 
 fun hunt()
-  print("Hello from hunt before simple_function")
+  print("Hello from hunt before simple_function\n")
   simple_function()
-  print("Hello from hunt after simple_function")
+  print("Hello from hunt after simple_function\n")

@@ -81,6 +81,8 @@ namespace Hunter::Compiler {
             InsertForLoopExpression(builder, forExpr);
         } else if (auto *whileExpr = dynamic_cast<WhileExpression *>(expr)) {
             InsertWhileLoopExpression(builder, whileExpr);
+        } else if (auto *funcCallExpr = dynamic_cast<FunctionCallExpression *>(expr)) {
+            InsertFunctionCallExpression(builder, funcCallExpr);
         } else {
             std::cerr << "Unhandled expression found" << std::endl;
             exit(1);
@@ -292,6 +294,29 @@ namespace Hunter::Compiler {
 
             builder->CreateCall(m_Functions["printf"], llvm::ArrayRef(ops));
         }
+    }
+
+    void CodeGenerator::InsertFunctionCallExpression(llvm::IRBuilder<> *builder, FunctionCallExpression *funcCallExpr) {
+        std::vector<llvm::Value *> ops;
+
+        for (const auto &parameter : funcCallExpr->GetParameters()) {
+
+            if (auto *strExpr = dynamic_cast<StringExpression *>(parameter)) {
+                llvm::GlobalVariable *strData = builder->CreateGlobalString(llvm::StringRef(strExpr->GetString()));
+                ops.push_back(strData);
+
+            } else if (auto *identifierExpr = dynamic_cast<IdentifierExpression *>(parameter)) {
+                std::string variableName = identifierExpr->GetVariableName();
+                if (!m_Variables.contains(variableName)) {
+                    std::cerr << "Could not find variable " << variableName << std::endl;
+                    exit(1);
+                }
+
+                ops.push_back(m_Variables[variableName]);
+            }
+        }
+
+        builder->CreateCall(m_Functions[funcCallExpr->GetFunctionName()], llvm::ArrayRef(ops));
     }
 
     llvm::Constant *GetIntValue(llvm::IRBuilder<> *builder, IntExpression *expr) {

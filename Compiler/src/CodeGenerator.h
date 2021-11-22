@@ -23,6 +23,7 @@ namespace Hunter::Compiler {
     class LetExpression;
     class VariableMutationExpression;
     class PrintExpression;
+    class FunctionCallExpression;
     class IntExpression;
     class AbstractSyntaxTree;
 
@@ -37,6 +38,7 @@ namespace Hunter::Compiler {
         void InsertForLoopExpression(llvm::IRBuilder<> *builder, ForLoopExpression *forExpr);
         void InsertWhileLoopExpression(llvm::IRBuilder<> *builder, WhileExpression *whileExpr);
         void InsertPrintExpression(llvm::IRBuilder<> *builder, PrintExpression *constExpr);
+        void InsertFunctionCallExpression(llvm::IRBuilder<> *builder, FunctionCallExpression *funcCallExpr);
         void InsertConstExpression(llvm::IRBuilder<> *builder, ConstExpression *constExpr);
         void InsertLetExpression(llvm::IRBuilder<> *builder, LetExpression *letExpr);
         void InsertVarMutationExpression(llvm::IRBuilder<> *builder, VariableMutationExpression *varMutExpr);
