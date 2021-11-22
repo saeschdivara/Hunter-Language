@@ -11,7 +11,7 @@ TEST_CASE( "Simple instructions are parsed", "[parser]" ) {
     SECTION("print instruction") {
         Parser parser;
 
-        auto * expr = parser.ParseLine(" print(\"Hello 8\\n\")");
+        auto * expr = parser.ParseLine(R"( print("Hello 8\n"))");
         REQUIRE( dynamic_cast<PrintExpression *>(expr) );
 
         auto * printExpr = dynamic_cast<PrintExpression *>(expr);
@@ -56,6 +56,7 @@ TEST_CASE( "Simple instructions are parsed", "[parser]" ) {
         REQUIRE( dynamic_cast<FunctionCallExpression *>(expr) );
 
         auto * funcCallExpr = dynamic_cast<FunctionCallExpression *>(expr);
-        REQUIRE(funcCallExpr->GetParameters().empty());
+        REQUIRE( funcCallExpr->GetParameters().empty() );
+        REQUIRE( funcCallExpr->GetFunctionName() == "foo" );
     }
 }

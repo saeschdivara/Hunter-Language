@@ -263,9 +263,17 @@ namespace Hunter::Compiler {
         FunctionCallExpression(std::vector<Expression *> parameters) : m_Parameters(std::move(parameters)) {}
         std::vector<Expression *> & GetParameters() { return m_Parameters; }
 
+        void SetFunctionName(const std::string &functionName) {
+            m_FunctionName = functionName;
+        }
+
+        const std::string &GetFunctionName() const {
+            return m_FunctionName;
+        }
+
         void Dump(int level) override {
             DumpSpaces(level);
-            std::cout << "Function call Expression: " << std::endl;
+            std::cout << "Function call Expression: " << GetFunctionName() << std::endl;
 
             for (const auto &parameter : m_Parameters) {
                 parameter->Dump(level+1);
@@ -273,6 +281,7 @@ namespace Hunter::Compiler {
         }
 
     private:
+        std::string m_FunctionName;
         std::vector<Expression *> m_Parameters;
     };
 

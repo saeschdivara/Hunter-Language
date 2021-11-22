@@ -109,6 +109,8 @@ namespace Hunter::Compiler {
                     expr = result.Expr;
                 } else if (str == "print") {
                     ParseResult result = ParseFunctionCall(i-1, input);
+                    dynamic_cast<FunctionCallExpression *>(result.Expr)->SetFunctionName("print");
+
                     i = result.Pos+1;
                     expr = new PrintExpression(result.Expr);
                 } else if (str == "const") {
@@ -135,7 +137,13 @@ namespace Hunter::Compiler {
 
                     ParseResult result = ParseIdentifier(-1, str);
                     if (result.Expr) {
-                        result = ParseVariableDeclaration(i-str.length()-1, input, VariableHandlingType::Assign);
+                        if (c == '(') {
+                            result = ParseFunctionCall(i, input);
+                            dynamic_cast<FunctionCallExpression *>(result.Expr)->SetFunctionName(str);
+                        } else {
+                            result = ParseVariableDeclaration(i-str.length()-1, input, VariableHandlingType::Assign);
+                        }
+
                         expr = result.Expr;
                         i = result.Pos+1;
                     } else {
