@@ -25,6 +25,30 @@ TEST_CASE( "Simple instructions are parsed", "[parser]" ) {
         REQUIRE(strExpression->GetString() == "Hello 8\n");
     }
 
+    SECTION("variable assignment instruction") {
+        Parser parser;
+
+        auto * expr = parser.ParseLine(" foo = foo + 1");
+        REQUIRE( dynamic_cast<VariableMutationExpression *>(expr) );
+
+        auto * varMutationExpr = dynamic_cast<VariableMutationExpression *>(expr);
+        REQUIRE(varMutationExpr->GetVariableName() == "foo");
+
+        REQUIRE( dynamic_cast<OperationExpression *>(varMutationExpr->GetValue()) );
+
+        auto * operationExpr = dynamic_cast<OperationExpression *>(varMutationExpr->GetValue());
+        REQUIRE( operationExpr->GetOperator() == OperatorType::MathPlus );
+        REQUIRE( dynamic_cast<IdentifierExpression *>(operationExpr->Left()) );
+        REQUIRE( dynamic_cast<IntExpression *>(operationExpr->Right()) );
+
+        auto * identifierExpr = dynamic_cast<IdentifierExpression *>(operationExpr->Left());
+        REQUIRE( identifierExpr->GetVariableName() == "foo" );
+
+        auto * intExpr = dynamic_cast<IntExpression *>(operationExpr->Right());
+        REQUIRE( intExpr->GetType() == IntType::i8 );
+        REQUIRE( intExpr->GetValue() == 1 );
+    }
+
     SECTION("function call instruction") {
         Parser parser;
 
