@@ -424,7 +424,7 @@ namespace Hunter::Compiler {
                 continue;
             }
 
-            if (isParametersParsing && (c == ',' || c == ')')) {
+            if (isParametersParsing && (c == ',' || c == ')') && !parameter.empty()) {
                 std::cout << "Parameter: " << parameter << std::endl;
                 auto index = parameter.find(':');
 

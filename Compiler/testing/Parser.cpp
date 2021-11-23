@@ -66,6 +66,19 @@ TEST_CASE( "Simple instructions are parsed", "[parser]" ) {
         REQUIRE( parameter->GetDataType() == DataType::i8 );
     }
 
+    SECTION("function declaration without parameter instruction") {
+        Parser parser;
+
+        auto * expr = parser.ParseLine("fun foo()");
+        REQUIRE( dynamic_cast<FunctionExpression *>(expr) );
+
+        auto * funcExpr = dynamic_cast<FunctionExpression *>(expr);
+        REQUIRE( funcExpr->GetName() == "foo" );
+
+        auto parameters = funcExpr->GetParameters();
+        REQUIRE( parameters.empty() );
+    }
+
     SECTION("function call instruction") {
         Parser parser;
 
