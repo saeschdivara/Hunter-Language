@@ -400,8 +400,11 @@ namespace Hunter::Compiler {
     ParseResult Parser::ParseFunctionHeader(int currentPos, const std::string &input) {
 
         std::string functionName;
+        std::string parameter;
         bool isNameParsing = true;
         bool isParametersParsing = false;
+
+        std::vector<ParameterExpression *> parametersList;
 
         for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
             char c = input.at(i);
@@ -421,11 +424,28 @@ namespace Hunter::Compiler {
                 continue;
             }
 
-            if (isParametersParsing && c == ')') {
-                break;
-            }
+            if (isParametersParsing && (c == ',' || c == ')')) {
+                std::cout << "Parameter: " << parameter << std::endl;
+                auto index = parameter.find(':');
 
-            if (isNameParsing) {
+                if (index > parameter.length()) {
+                    std::cerr << ": is missing for parameter type" << std::endl;
+                    exit(1);
+                }
+
+                std::string parameterName = parameter.substr(0, index);
+                std::string parameterType = parameter.substr(index+1, parameter.size());
+
+                parametersList.push_back(
+                    new ParameterExpression(parameterName, GetDataTypeFromString(parameterType))
+                );
+
+                parameter = "";
+            }
+            else if (isParametersParsing) {
+                parameter.push_back(c);
+            }
+            else if (isNameParsing) {
                 functionName.push_back(c);
             }
 
@@ -433,7 +453,7 @@ namespace Hunter::Compiler {
 
         return {
             .Pos = currentPos,
-            .Expr = new FunctionExpression(functionName, {})
+            .Expr = new FunctionExpression(functionName, parametersList)
         };
     }
 

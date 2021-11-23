@@ -14,6 +14,17 @@ namespace Hunter::Compiler {
         i64 = 64
     };
 
+    enum class DataType {
+        Unknown = 0,
+        String  = 1,
+        i8      = static_cast<int>(IntType::i8),
+        i16     = static_cast<int>(IntType::i16),
+        i32     = static_cast<int>(IntType::i32),
+        i64     = static_cast<int>(IntType::i64),
+    };
+
+    DataType GetDataTypeFromString(const std::string & typeStr);
+
     IntType GetTypeFromValue(int64_t val);
 
     enum class OperatorType {
@@ -287,17 +298,22 @@ namespace Hunter::Compiler {
 
     class ParameterExpression : public Expression {
     public:
-        ParameterExpression(std::string name) : m_Name(std::move(name)) {}
+        ParameterExpression(std::string name, DataType dataType) : m_Name(std::move(name)), m_DataType(dataType) {}
 
         std::string & GetName() { return m_Name; }
 
+        DataType GetDataType() const {
+            return m_DataType;
+        }
+
         void Dump(int level) override {
             DumpSpaces(level);
-            std::cout << "Parameter Expression: " << GetName() << std::endl;
+            std::cout << "Parameter Expression: " << GetName() << " (" << static_cast<int>(GetDataType()) << ")" << std::endl;
         }
 
     private:
         std::string m_Name;
+        DataType m_DataType;
     };
 
     class FunctionExpression : public BlockExpression {

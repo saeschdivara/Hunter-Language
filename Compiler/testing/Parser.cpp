@@ -57,7 +57,13 @@ TEST_CASE( "Simple instructions are parsed", "[parser]" ) {
 
         auto * funcExpr = dynamic_cast<FunctionExpression *>(expr);
         REQUIRE( funcExpr->GetName() == "foo" );
-        REQUIRE( funcExpr->GetParameters().size() == 1 );
+
+        auto parameters = funcExpr->GetParameters();
+        REQUIRE( parameters.size() == 1 );
+
+        auto * parameter = parameters.at(0);
+        REQUIRE( parameter->GetName() == "num" );
+        REQUIRE( parameter->GetDataType() == DataType::i8 );
     }
 
     SECTION("function call instruction") {

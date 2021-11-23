@@ -2,6 +2,27 @@
 
 namespace Hunter::Compiler {
 
+    DataType GetDataTypeFromString(const std::string &typeStr) {
+        if (typeStr == "string") {
+            return DataType::String;
+        }
+        else if (typeStr == "i8") {
+            return DataType::i8;
+        }
+        else if (typeStr == "i16") {
+            return DataType::i16;
+        }
+        else if (typeStr == "i32") {
+            return DataType::i32;
+        }
+        else if (typeStr == "i64") {
+            return DataType::i64;
+        }
+        else {
+            return DataType::Unknown;
+        }
+    }
+
     IntType GetTypeFromValue(int64_t val) {
         if (val >= INT8_MIN && val <= INT8_MAX) {
             return IntType::i8;
