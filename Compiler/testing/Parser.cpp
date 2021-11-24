@@ -25,6 +25,21 @@ TEST_CASE( "Simple instructions are parsed", "[parser]" ) {
         REQUIRE(strExpression->GetString() == "Hello 8\n");
     }
 
+    SECTION("const instruction") {
+        Parser parser;
+
+        auto * expr = parser.ParseLine(R"( const my_str = "Foo Bar")");
+        REQUIRE( dynamic_cast<ConstExpression *>(expr) );
+
+        auto * constExpr = dynamic_cast<ConstExpression *>(expr);
+        REQUIRE( constExpr->GetVariableName() == "my_str" );
+
+        REQUIRE( dynamic_cast<StringExpression *>(constExpr->GetValue()) );
+
+        auto * strExpr = dynamic_cast<StringExpression *>(constExpr->GetValue());
+        REQUIRE( strExpr->GetString() == "Foo Bar" );
+    }
+
     SECTION("variable assignment instruction") {
         Parser parser;
 

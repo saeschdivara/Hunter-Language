@@ -281,6 +281,12 @@ namespace Hunter::Compiler {
             char c = input.at(i);
 
             if (isspace(c) && !str.empty()) {
+
+                if (str.at(0) == '"' && str.at(str.length()-1) != '"') {
+                    str.push_back(c);
+                    continue;
+                }
+
                 std::cout << "Current expr: " << str << std::endl;
 
                 ParseResult result = ParseExpression(-1, str);
