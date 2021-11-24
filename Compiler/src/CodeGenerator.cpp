@@ -396,13 +396,7 @@ namespace Hunter::Compiler {
                 ops.push_back(strData);
 
             } else if (auto *identifierExpr = dynamic_cast<IdentifierExpression *>(parameter)) {
-                std::string variableName = identifierExpr->GetVariableName();
-                if (!m_Variables.contains(variableName)) {
-                    std::cerr << "Could not find variable " << variableName << std::endl;
-                    exit(1);
-                }
-
-                ops.push_back(m_Variables[variableName]);
+                ops.push_back(GetVariableValue(builder, identifierExpr->GetVariableName()));
             } else if (auto *intExpr = dynamic_cast<IntExpression *>(parameter)) {
                 auto * value = GetValueFromExpression(builder, intExpr);
                 ops.push_back(value);
@@ -525,11 +519,13 @@ namespace Hunter::Compiler {
 
         Expression *variableExpr = m_VariablesExpression[variableName];
 
-        if (auto *intValExpr = dynamic_cast<IntExpression *>(variableExpr)) {
+        if (dynamic_cast<StringExpression *>(variableExpr)) {
+            return builder->CreateLoad(builder->getInt8PtrTy(), m_Variables[variableName]);
+        } else if (auto *intValExpr = dynamic_cast<IntExpression *>(variableExpr)) {
             IntType type = intValExpr->GetType();
             return builder->CreateLoad(GetVariableTypeForInt(builder, type), m_Variables[variableName]);
         } else {
-            std::cerr << "Currently only integer expressions are supported for variable values" << std::endl;
+            std::cerr << "Unsupported expressions for variable values found" << std::endl;
             exit(1);
         }
     }
