@@ -25,49 +25,59 @@ namespace Hunter::Compiler {
                     continue;
                 }
 
-                m_CurrentExpression = ParseLine(m_DataStr);
+                OnLineFinished(tree);
 
-                if (!m_CurrentExpression) {
-                    std::cerr << "Could not parse valid expression from current line" << std::endl;
-                    exit(1);
-                }
-
-                if (m_IsParsingBlock) {
-                    if (auto *ifExpr = dynamic_cast<IfExpression *>(m_BlockExpressions.top())) {
-
-                        if (auto * elseExpr = dynamic_cast<ElseExpression *>(m_CurrentExpression)) {
-                            m_BlockExpressions.pop();
-                            ifExpr->SetElse(elseExpr);
-                        } else {
-                            ifExpr->AddExpression(m_CurrentExpression);
-                        }
-
-                    } else if (auto *blockExpr = dynamic_cast<BlockExpression *>(m_BlockExpressions.top())) {
-                        blockExpr->AddExpression(m_CurrentExpression);
-                    }
-
-                    if (m_CurrentExpression->HasBlock()) {
-
-                        m_BlockExpressions.push(m_CurrentExpression);
-                        m_IsParsingBlock = true;
-                    }
-                } else {
-                    tree->AddExpression(m_CurrentExpression);
-
-                    if (m_CurrentExpression->HasBlock()) {
-                        m_BlockExpressions.push(m_CurrentExpression);
-                        m_IsParsingBlock = true;
-                    }
-                }
-
-                m_DataStr = "";
                 continue;
             }
 
             m_DataStr.push_back(c);
         }
 
+        if (!m_DataStr.empty()) {
+            OnLineFinished(tree);
+        }
+
         return tree;
+    }
+
+    void Parser::OnLineFinished(AbstractSyntaxTree * tree) {
+
+        m_CurrentExpression = ParseLine(m_DataStr);
+
+        if (!m_CurrentExpression) {
+            std::cerr << "Could not parse valid expression from current line" << std::endl;
+            exit(1);
+        }
+
+        if (m_IsParsingBlock) {
+            if (auto *ifExpr = dynamic_cast<IfExpression *>(m_BlockExpressions.top())) {
+
+                if (auto * elseExpr = dynamic_cast<ElseExpression *>(m_CurrentExpression)) {
+                    m_BlockExpressions.pop();
+                    ifExpr->SetElse(elseExpr);
+                } else {
+                    ifExpr->AddExpression(m_CurrentExpression);
+                }
+
+            } else if (auto *blockExpr = dynamic_cast<BlockExpression *>(m_BlockExpressions.top())) {
+                blockExpr->AddExpression(m_CurrentExpression);
+            }
+
+            if (m_CurrentExpression->HasBlock()) {
+
+                m_BlockExpressions.push(m_CurrentExpression);
+                m_IsParsingBlock = true;
+            }
+        } else {
+            tree->AddExpression(m_CurrentExpression);
+
+            if (m_CurrentExpression->HasBlock()) {
+                m_BlockExpressions.push(m_CurrentExpression);
+                m_IsParsingBlock = true;
+            }
+        }
+
+        m_DataStr = "";
     }
 
     Expression *Parser::ParseLine(const std::string &input) {
