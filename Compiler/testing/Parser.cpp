@@ -8,7 +8,7 @@ using namespace Hunter::Compiler;
 
 TEST_CASE( "Simple instructions are parsed", "[parser]" ) {
 
-    SECTION("print instruction") {
+    SECTION("print with static string instruction") {
         Parser parser;
 
         auto * expr = parser.ParseLine(R"( print("Hello 8\n"))");
@@ -23,6 +23,28 @@ TEST_CASE( "Simple instructions are parsed", "[parser]" ) {
         auto * strExpression = dynamic_cast<StringExpression *>(funcCallExpr->GetParameters().at(0));
         REQUIRE(strExpression);
         REQUIRE(strExpression->GetString() == "Hello 8\n");
+    }
+
+    SECTION("print with const string var instruction") {
+        Parser parser;
+
+        parser.ParseLine(R"( const helloWorld = "Hello World")");
+        auto * expr = parser.ParseLine(R"( print(helloWorld, "\n"))");
+        REQUIRE( dynamic_cast<PrintExpression *>(expr) );
+
+        auto * printExpr = dynamic_cast<PrintExpression *>(expr);
+        REQUIRE( dynamic_cast<FunctionCallExpression *>(printExpr->GetInput()) );
+
+        auto * funcCallExpr = dynamic_cast<FunctionCallExpression *>(printExpr->GetInput());
+        REQUIRE(funcCallExpr->GetParameters().size() == 2);
+
+        auto * identifierExpression = dynamic_cast<IdentifierExpression *>(funcCallExpr->GetParameters().at(0));
+        REQUIRE(identifierExpression);
+        REQUIRE(identifierExpression->GetVariableName() == "helloWorld");
+
+        auto * strExpression = dynamic_cast<StringExpression *>(funcCallExpr->GetParameters().at(1));
+        REQUIRE(strExpression);
+        REQUIRE(strExpression->GetString() == "\n");
     }
 
     SECTION("const instruction") {

@@ -14,6 +14,26 @@
 
 
 namespace Hunter::Compiler {
+
+    llvm::Type *GetTypeFromDataType(llvm::IRBuilder<> *builder, DataType dataType) {
+        switch (dataType) {
+            case DataType::Unknown: {
+                std::cerr << "Cannot convert from unknown data type" << std::endl;
+                exit(1);
+            }
+            case DataType::String:
+                return builder->getInt8PtrTy();
+            case DataType::i8:
+                return builder->getInt8Ty();
+            case DataType::i16:
+                return builder->getInt16Ty();
+            case DataType::i32:
+                return builder->getInt32Ty();
+            case DataType::i64:
+                return builder->getInt64Ty();
+        }
+    }
+
     llvm::Module *CodeGenerator::GenerateCode(AbstractSyntaxTree *ast) {
 
         std::cout << std::endl << std::endl << "Generate code" << std::endl << "------------" << std::endl;
@@ -109,7 +129,13 @@ namespace Hunter::Compiler {
         if (m_Functions.contains(functionName)) {
             currentFunction = m_Functions[functionName];
         } else {
-            auto *simpleFuncType = llvm::FunctionType::get(llvm::Type::getVoidTy(m_Context), false);
+            std::vector<llvm::Type *> parameterDescriptions;
+
+            for (const auto &parameter : funcExpr->GetParameters()) {
+                parameterDescriptions.push_back(GetTypeFromDataType(builder, parameter->GetDataType()));
+            }
+
+            auto *simpleFuncType = llvm::FunctionType::get(llvm::Type::getVoidTy(m_Context), parameterDescriptions, false);
 
             currentFunction = llvm::Function::Create(
                     simpleFuncType,
@@ -118,16 +144,49 @@ namespace Hunter::Compiler {
                     m_Module
             );
 
+            int argumentCounter = 0;
+            for (auto &arg : currentFunction->args()) {
+                arg.setName(funcExpr->GetParameters().at(argumentCounter)->GetName());
+                argumentCounter++;
+            }
+
             // Create a new basic block to start insertion into.
             llvm::BasicBlock::Create(m_Context, "entry", currentFunction);
 
             m_Functions[funcExpr->GetName()] = currentFunction;
         }
+
         llvm::IRBuilder<> funcBlockBuilder(&currentFunction->getEntryBlock(), currentFunction->getEntryBlock().begin());
+        std::unordered_map<std::string, llvm::Value *> outerVariables;
+
+        int argumentCounter = 0;
+        for (const auto &arg : currentFunction->args()) {
+            auto *parameter = funcExpr->GetParameters().at(argumentCounter);
+            auto parameterName = parameter->GetName();
+
+            if (m_Variables.contains(parameterName)) {
+                outerVariables[parameterName] = m_Variables[parameterName];
+            }
+
+            llvm::Value *variable = funcBlockBuilder.CreateAlloca(
+                GetTypeFromDataType(&funcBlockBuilder, parameter->GetDataType()),
+                nullptr,
+                parameterName
+            );
+
+            funcBlockBuilder.CreateStore((llvm::Value *)&arg, variable);
+
+            m_Variables[parameterName] = variable;
+            m_VariablesExpression[parameterName] = parameter;
+
+            argumentCounter++;
+        }
 
         for (const auto &expr : funcExpr->GetBody()) {
             InsertExpression(&funcBlockBuilder, expr);
         }
+
+        // todo: reassign variables
 
         funcBlockBuilder.CreateRetVoid();
 
@@ -175,11 +234,11 @@ namespace Hunter::Compiler {
         // create loop counter
         if (auto *range = dynamic_cast<RangeExpression *>(forExpr->GetRange())) {
             IntType intType = IntType::i64;
-            llvm::IntegerType * counterType = GetVariableTypeForInt(builder, intType);
+            llvm::IntegerType *counterType = GetVariableTypeForInt(builder, intType);
 
             std::string counterName = forExpr->GetCounter();
             InsertIntExpression(builder, counterName, new IntExpression(intType, range->GetStart()));
-            llvm::ConstantInt * endValue = llvm::ConstantInt::get(counterType, range->GetEnd());
+            llvm::ConstantInt *endValue = llvm::ConstantInt::get(counterType, range->GetEnd());
 
             llvm::Function *currentFunction = builder->GetInsertBlock()->getParent();
             llvm::BasicBlock *loopBlock = llvm::BasicBlock::Create(m_Context, "for-loop", currentFunction);
@@ -193,16 +252,16 @@ namespace Hunter::Compiler {
             }
 
             // step
-            llvm::Constant * step = llvm::ConstantInt::get(counterType, 1);
+            llvm::Constant *step = llvm::ConstantInt::get(counterType, 1);
 
             llvm::Value *loadedCounter = builder->CreateLoad(counterType, m_Variables[counterName]);
             llvm::Value *nextCounter = builder->CreateAdd(loadedCounter, step, "next-counter");
             builder->CreateStore(nextCounter, m_Variables[counterName]);
 
-            llvm::Value * conditionResult = builder->CreateICmpSLE(
-                builder->CreateLoad(counterType, m_Variables[counterName]),
-                endValue,
-                "loop-condition"
+            llvm::Value *conditionResult = builder->CreateICmpSLE(
+                    builder->CreateLoad(counterType, m_Variables[counterName]),
+                    endValue,
+                    "loop-condition"
             );
             // Create the "after loop" block and insert it.
             llvm::BasicBlock *afterLoopBlock = llvm::BasicBlock::Create(m_Context, "after-for-loop", currentFunction);
@@ -220,7 +279,7 @@ namespace Hunter::Compiler {
     }
 
     void CodeGenerator::InsertWhileLoopExpression(llvm::IRBuilder<> *builder, WhileExpression *whileExpr) {
-        if (auto * conditionExpr = dynamic_cast<BooleanExpression *>(whileExpr->GetCondition())) {
+        if (auto *conditionExpr = dynamic_cast<BooleanExpression *>(whileExpr->GetCondition())) {
             llvm::Function *currentFunction = builder->GetInsertBlock()->getParent();
             llvm::BasicBlock *loopBlock = llvm::BasicBlock::Create(m_Context, "while-loop", currentFunction);
             llvm::BasicBlock *loopBodyBlock = llvm::BasicBlock::Create(m_Context, "while-body", currentFunction);
@@ -284,8 +343,39 @@ namespace Hunter::Compiler {
                         } else {
                             formatString += "%d";
                         }
+                    } else if (auto *parameterExpr = dynamic_cast<ParameterExpression *>(variableExpr)) {
+                        auto parameterType = parameterExpr->GetDataType();
+                        if (parameterType == DataType::String) {
+                            ops.push_back(builder->CreateLoad(builder->getInt8PtrTy(), m_Variables[variableName]));
+                            formatString += "%s";
+                        } else if (
+                                parameterType == DataType::i8 ||
+                                parameterType == DataType::i16 ||
+                                parameterType == DataType::i32 ||
+                                parameterType == DataType::i64
+                        ) {
+                            auto type = static_cast<IntType>(parameterType);
+                            auto *loadExpr = builder->CreateLoad(GetTypeFromDataType(builder, parameterType),
+                                                                 m_Variables[variableName]);
+                            ops.push_back(loadExpr);
+
+                            if (type == IntType::i64) {
+                                formatString += "%lld";
+                            } else {
+                                formatString += "%d";
+                            }
+                        }
+                    } else if (!variableExpr) {
+                        std::cerr << "Invalid expression found for variable " << variableName << std::endl;
+                        exit(1);
+                    } else {
+                        std::cerr << "Unknown expression type of variable " << variableName << std::endl;
+                        exit(1);
                     }
 
+                } else {
+                    std::cerr << "Unsupported expression for call parameter" << std::endl;
+                    exit(1);
                 }
             }
 
@@ -313,6 +403,12 @@ namespace Hunter::Compiler {
                 }
 
                 ops.push_back(m_Variables[variableName]);
+            } else if (auto *intExpr = dynamic_cast<IntExpression *>(parameter)) {
+                auto * value = GetValueFromExpression(builder, intExpr);
+                ops.push_back(value);
+            } else {
+                std::cerr << "Unsupported expression as parameter used" << std::endl;
+                exit(1);
             }
         }
 
@@ -378,18 +474,19 @@ namespace Hunter::Compiler {
 
     void
     CodeGenerator::InsertVarMutationExpression(llvm::IRBuilder<> *builder, VariableMutationExpression *varMutExpr) {
-        if (auto * operatorExpr = dynamic_cast<OperationExpression *>(varMutExpr->GetValue())) {
+        if (auto *operatorExpr = dynamic_cast<OperationExpression *>(varMutExpr->GetValue())) {
             if (operatorExpr->GetOperator() == OperatorType::MathPlus) {
-                llvm::Value * variable = m_Variables[varMutExpr->GetVariableName()];
+                llvm::Value *variable = m_Variables[varMutExpr->GetVariableName()];
 
                 llvm::Value *incrementedValue = builder->CreateAdd(
-                    GetValueFromExpression(builder, operatorExpr->Left()),
-                    GetValueFromExpression(builder, operatorExpr->Right()),
-                    "next-" + varMutExpr->GetVariableName()
+                        GetValueFromExpression(builder, operatorExpr->Left()),
+                        GetValueFromExpression(builder, operatorExpr->Right()),
+                        "next-" + varMutExpr->GetVariableName()
                 );
                 builder->CreateStore(incrementedValue, variable);
             } else {
-                std::cerr << "Variable mutation with operator " << GetOperatorString(operatorExpr->GetOperator()) << "not yet implemented" << std::endl;
+                std::cerr << "Variable mutation with operator " << GetOperatorString(operatorExpr->GetOperator())
+                          << "not yet implemented" << std::endl;
                 exit(1);
             }
         } else {
@@ -442,31 +539,32 @@ namespace Hunter::Compiler {
         switch (condition->GetOperator()) {
             case OperatorType::LogicalEquals:
                 return builder->CreateICmpEQ(
-                    GetValueFromExpression(builder, condition->Left()),
-                    GetValueFromExpression(builder, condition->Right())
+                        GetValueFromExpression(builder, condition->Left()),
+                        GetValueFromExpression(builder, condition->Right())
                 );
             case OperatorType::LogicalLower:
                 return builder->CreateICmpSLT(
-                    GetValueFromExpression(builder, condition->Left()),
-                    GetValueFromExpression(builder, condition->Right())
+                        GetValueFromExpression(builder, condition->Left()),
+                        GetValueFromExpression(builder, condition->Right())
                 );
             case OperatorType::LogicalLowerEquals:
                 return builder->CreateICmpSLE(
-                    GetValueFromExpression(builder, condition->Left()),
-                    GetValueFromExpression(builder, condition->Right())
+                        GetValueFromExpression(builder, condition->Left()),
+                        GetValueFromExpression(builder, condition->Right())
                 );
             case OperatorType::LogicalGreater:
                 return builder->CreateICmpSGT(
-                    GetValueFromExpression(builder, condition->Left()),
-                    GetValueFromExpression(builder, condition->Right())
+                        GetValueFromExpression(builder, condition->Left()),
+                        GetValueFromExpression(builder, condition->Right())
                 );
             case OperatorType::LogicalGreaterEquals:
                 return builder->CreateICmpSGE(
-                    GetValueFromExpression(builder, condition->Left()),
-                    GetValueFromExpression(builder, condition->Right())
+                        GetValueFromExpression(builder, condition->Left()),
+                        GetValueFromExpression(builder, condition->Right())
                 );
             default:
-                std::cerr << "Not supported operator used: " << GetOperatorString(condition->GetOperator()) << std::endl;
+                std::cerr << "Not supported operator used: " << GetOperatorString(condition->GetOperator())
+                          << std::endl;
                 exit(1);
         }
     }
