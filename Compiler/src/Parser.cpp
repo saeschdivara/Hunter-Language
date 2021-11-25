@@ -44,9 +44,15 @@ namespace Hunter::Compiler {
 
         m_CurrentExpression = ParseLine(m_DataStr);
 
-        if (!m_CurrentExpression) {
+        if (!m_CurrentExpression && !m_IsFullLineComment) {
             std::cerr << "Could not parse valid expression from current line" << std::endl;
             exit(1);
+        }
+
+        if (m_IsFullLineComment) {
+            m_DataStr = "";
+            m_IsFullLineComment = false;
+            return;
         }
 
         if (m_IsParsingBlock) {
@@ -108,6 +114,11 @@ namespace Hunter::Compiler {
                     }
                 }
 
+            }
+
+            if (c == '#') {
+                m_IsFullLineComment = true;
+                break;
             }
 
             if (isspace(c) || c == '(') {

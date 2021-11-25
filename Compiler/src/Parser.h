@@ -63,6 +63,7 @@ namespace Hunter::Compiler {
         std::stack<Expression *> m_BlockExpressions;
 
         bool m_IsParsingBlock = false;
+        bool m_IsFullLineComment = false;
         int m_CurrentLevel = 0;
     };
 
