@@ -44,18 +44,18 @@ namespace Hunter::Compiler {
         void OnLineFinished(AbstractSyntaxTree * tree);
 
         Expression * ParseLine(const std::string & input);
-        ParseResult ParseExpression(int currentPos, const std::string & input);
-        ParseResult ParseFullExpression(int currentPos, const std::string & input);
-        ParseResult ParseString(int currentPos, const std::string & input);
-        ParseResult ParseFunctionHeader(int currentPos, const std::string & input);
-        ParseResult ParseIf(int currentPos, const std::string & input);
-        ParseResult ParseFor(int currentPos, const std::string & input);
-        ParseResult ParseRange(int currentPos, const std::string & input);
-        ParseResult ParseBoolean(int currentPos, const std::string & input);
-        ParseResult ParseVariableDeclaration(int currentPos, const std::string & input, VariableHandlingType handlingType);
-        ParseResult ParseInt(int currentPos, const std::string & input);
-        ParseResult ParseFunctionCall(int currentPos, const std::string & input);
-        ParseResult ParseIdentifier(int currentPos, const std::string & input);
+        ParseResult ParseExpression(int currentPos, int endPosition, const std::string & input);
+        ParseResult ParseFullExpression(int currentPos, int endPosition, const std::string & input);
+        ParseResult ParseString(int currentPos, int endPosition, const std::string & input);
+        ParseResult ParseFunctionHeader(int currentPos, int endPosition, const std::string & input);
+        ParseResult ParseIf(int currentPos, int endPosition, const std::string & input);
+        ParseResult ParseFor(int currentPos, int endPosition, const std::string & input);
+        ParseResult ParseRange(int currentPos, int endPosition, const std::string & input);
+        ParseResult ParseBoolean(int currentPos, int endPosition, const std::string & input);
+        ParseResult ParseVariableDeclaration(int currentPos, int endPosition, const std::string & input, VariableHandlingType handlingType);
+        ParseResult ParseInt(int currentPos, int endPosition, const std::string & input);
+        ParseResult ParseFunctionCall(int currentPos, int endPosition, const std::string & input);
+        ParseResult ParseIdentifier(int currentPos, int endPosition, const std::string & input);
 
     private:
         std::string m_DataStr;

@@ -48,8 +48,7 @@ namespace Hunter::Compiler {
             std::cerr << "Could not parse valid expression from current line" << std::endl;
             exit(1);
         }
-
-        if (m_IsFullLineComment) {
+        else if (!m_CurrentExpression && m_IsFullLineComment) {
             m_DataStr = "";
             m_IsFullLineComment = false;
             return;
@@ -92,8 +91,17 @@ namespace Hunter::Compiler {
 
         std::string str;
         Expression * expr = nullptr;
+        int endPosition = input.length();
+        int hashPosition = input.find("#");
 
-        for (int i = 0; i < input.length(); ++i) {
+        if (hashPosition != std::string::npos) {
+            if (input.find('"', hashPosition) == std::string::npos) {
+                endPosition = hashPosition-1;
+                m_IsFullLineComment = true;
+            }
+        }
+
+        for (int i = 0; i < endPosition; ++i) {
             char c = input.at(i);
 
             if (isspace(c) && isLevelParsing) {
@@ -116,53 +124,48 @@ namespace Hunter::Compiler {
 
             }
 
-            if (c == '#') {
-                m_IsFullLineComment = true;
-                break;
-            }
-
             if (isspace(c) || c == '(') {
                 std::cout << "Word 1: " << str << std::endl;
 
                 if (str == "fun") {
-                    ParseResult result = ParseFunctionHeader(i, input);
+                    ParseResult result = ParseFunctionHeader(i, endPosition, input);
                     i = result.Pos+1;
                     expr = result.Expr;
                 } else if (str == "print") {
-                    ParseResult result = ParseFunctionCall(i-1, input);
+                    ParseResult result = ParseFunctionCall(i-1, endPosition, input);
                     dynamic_cast<FunctionCallExpression *>(result.Expr)->SetFunctionName("print");
 
                     i = result.Pos+1;
                     expr = new PrintExpression(result.Expr);
                 } else if (str == "const") {
-                    ParseResult result = ParseVariableDeclaration(i, input, VariableHandlingType::Const);
+                    ParseResult result = ParseVariableDeclaration(i, endPosition, input, VariableHandlingType::Const);
                     i = result.Pos+1;
                     expr = result.Expr;
                 } else if (str == "let") {
-                    ParseResult result = ParseVariableDeclaration(i, input, VariableHandlingType::Let);
+                    ParseResult result = ParseVariableDeclaration(i, endPosition, input, VariableHandlingType::Let);
                     i = result.Pos+1;
                     expr = result.Expr;
                 }  else if (str == "if") {
-                    ParseResult result = ParseIf(i, input);
+                    ParseResult result = ParseIf(i, endPosition, input);
                     i = result.Pos+1;
                     expr = result.Expr;
                 }   else if (str == "while") {
-                    ParseResult result = ParseBoolean(i, input);
+                    ParseResult result = ParseBoolean(i, endPosition, input);
                     i = result.Pos+1;
                     expr = new WhileExpression(result.Expr);
                 }  else if (str == "for") {
-                    ParseResult result = ParseFor(i, input);
+                    ParseResult result = ParseFor(i, endPosition, input);
                     i = result.Pos+1;
                     expr = result.Expr;
                 } else {
 
-                    ParseResult result = ParseIdentifier(-1, str);
+                    ParseResult result = ParseIdentifier(-1, endPosition, str);
                     if (result.Expr) {
                         if (c == '(') {
-                            result = ParseFunctionCall(i, input);
+                            result = ParseFunctionCall(i, endPosition, input);
                             dynamic_cast<FunctionCallExpression *>(result.Expr)->SetFunctionName(str);
                         } else {
-                            result = ParseVariableDeclaration(i-str.length()-1, input, VariableHandlingType::Assign);
+                            result = ParseVariableDeclaration(i-str.length()-1, endPosition, input, VariableHandlingType::Assign);
                         }
 
                         expr = result.Expr;
@@ -203,12 +206,12 @@ namespace Hunter::Compiler {
         return expr;
     }
 
-    ParseResult Parser::ParseExpression(int currentPos, const std::string &input) {
+    ParseResult Parser::ParseExpression(int currentPos,  int endPosition, const std::string &input) {
 
         std::string str;
         Expression * expr = nullptr;
 
-        for (int i = currentPos+1; i < input.length(); ++i, ++currentPos) {
+        for (int i = currentPos+1; i < endPosition; ++i, ++currentPos) {
             char c = input.at(i);
 
             if (isspace(c)) {
@@ -233,7 +236,7 @@ namespace Hunter::Compiler {
             else if (c == '"') {
                 std::cout << "Word: " << str << std::endl;
 
-                ParseResult result = ParseString(i, input);
+                ParseResult result = ParseString(i, endPosition, input);
                 i = result.Pos+1;
                 currentPos = result.Pos+1;
                 expr = result.Expr;
@@ -246,7 +249,7 @@ namespace Hunter::Compiler {
             else if (isalpha(c) && str.empty()) {
                 std::cout << "Word: " << str << std::endl;
 
-                ParseResult result = ParseIdentifier(i-1, input);
+                ParseResult result = ParseIdentifier(i-1, endPosition, input);
                 i = result.Pos+1;
                 currentPos = result.Pos+1;
                 expr = result.Expr;
@@ -259,7 +262,7 @@ namespace Hunter::Compiler {
             else if ((isnumber(c) || c == '-') && str.empty()) {
                 std::cout << "Word: " << str << std::endl;
 
-                ParseResult result = ParseInt(i-1, input);
+                ParseResult result = ParseInt(i-1, endPosition, input);
                 i = result.Pos+1;
                 currentPos = result.Pos+1;
                 expr = result.Expr;
@@ -294,11 +297,11 @@ namespace Hunter::Compiler {
         };
     }
 
-    ParseResult Parser::ParseFullExpression(int currentPos, const std::string &input) {
+    ParseResult Parser::ParseFullExpression(int currentPos,  int endPosition, const std::string &input) {
         std::vector<Expression *> ops;
         std::string str;
 
-        for (int i = currentPos; i < input.length(); ++i, currentPos++) {
+        for (int i = currentPos; i < endPosition; ++i, currentPos++) {
             char c = input.at(i);
 
             if (isspace(c) && !str.empty()) {
@@ -310,7 +313,7 @@ namespace Hunter::Compiler {
 
                 std::cout << "Current expr: " << str << std::endl;
 
-                ParseResult result = ParseExpression(-1, str);
+                ParseResult result = ParseExpression(-1, endPosition, str);
 
                 if (!result.Expr) {
                     std::cerr << "Could not parse expression" << std::endl;
@@ -351,7 +354,7 @@ namespace Hunter::Compiler {
 
         if (!str.empty()) {
             std::cout << "Current expr: " << str << std::endl;
-            ParseResult result = ParseExpression(-1, str);
+            ParseResult result = ParseExpression(-1, str.length(), str);
 
             if (!result.Expr) {
                 std::cerr << "Could not parse expression" << std::endl;
@@ -404,10 +407,10 @@ namespace Hunter::Compiler {
         }
     }
 
-    ParseResult Parser::ParseString(int currentPos, const std::string &input) {
+    ParseResult Parser::ParseString(int currentPos,  int endPosition, const std::string &input) {
         std::string str;
 
-        for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
+        for (int i = currentPos+1; i < endPosition; ++i, currentPos++) {
             char c = input.at(i);
             if (c == '"') {
                 break;
@@ -424,7 +427,7 @@ namespace Hunter::Compiler {
         };
     }
 
-    ParseResult Parser::ParseFunctionHeader(int currentPos, const std::string &input) {
+    ParseResult Parser::ParseFunctionHeader(int currentPos,  int endPosition, const std::string &input) {
 
         std::string functionName;
         std::string parameter;
@@ -433,7 +436,7 @@ namespace Hunter::Compiler {
 
         std::vector<ParameterExpression *> parametersList;
 
-        for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
+        for (int i = currentPos+1; i < endPosition; ++i, currentPos++) {
             char c = input.at(i);
 
             if (isspace(c) && isNameParsing) {
@@ -484,12 +487,12 @@ namespace Hunter::Compiler {
         };
     }
 
-    ParseResult Parser::ParseIf(int currentPos, const std::string &input) {
+    ParseResult Parser::ParseIf(int currentPos,  int endPosition, const std::string &input) {
 
         std::string str;
         std::string expressionStr;
 
-        for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
+        for (int i = currentPos+1; i < endPosition; ++i, currentPos++) {
             char c = input.at(i);
 
             if (isspace(c)) {
@@ -511,7 +514,7 @@ namespace Hunter::Compiler {
             exit(1);
         }
 
-        Expression * expr = ParseBoolean(0, expressionStr).Expr;
+        Expression * expr = ParseBoolean(0, expressionStr.length(), expressionStr).Expr;
 
         if (!expr) {
             std::cerr << "Could not parse if boolean expression" << std::endl;
@@ -524,7 +527,7 @@ namespace Hunter::Compiler {
         };
     }
 
-    ParseResult Parser::ParseFor(int currentPos, const std::string &input) {
+    ParseResult Parser::ParseFor(int currentPos,  int endPosition, const std::string &input) {
 
         std::string str;
         std::string counterIdentifier;
@@ -532,7 +535,7 @@ namespace Hunter::Compiler {
 
         int currentParsingPart = 1;
 
-        for (int i = currentPos; i < input.length(); ++i, currentPos++) {
+        for (int i = currentPos; i < endPosition; ++i, currentPos++) {
             char c = input.at(i);
 
             if (isspace(c) && !str.empty()) {
@@ -547,7 +550,7 @@ namespace Hunter::Compiler {
                         exit(1);
                     }
                 } else if (currentParsingPart == 3) {
-                    ParseResult result = ParseRange(-1, str);
+                    ParseResult result = ParseRange(-1, str.length(), str);
 
                     if (!result.Expr) {
                         std::cerr << "Could not parse range expression" << std::endl;
@@ -573,7 +576,7 @@ namespace Hunter::Compiler {
         }
 
         if (currentParsingPart == 3) {
-            ParseResult result = ParseRange(-1, str);
+            ParseResult result = ParseRange(-1, str.length(), str);
 
             if (!result.Expr) {
                 std::cerr << "Could not parse range expression" << std::endl;
@@ -591,13 +594,13 @@ namespace Hunter::Compiler {
         };
     }
 
-    ParseResult Parser::ParseRange(int currentPos, const std::string &input) {
+    ParseResult Parser::ParseRange(int currentPos,  int endPosition, const std::string &input) {
 
         std::string str;
         int64_t start = -1;
         int64_t end = -1;
 
-        for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
+        for (int i = currentPos+1; i < endPosition; ++i, currentPos++) {
             char c = input.at(i);
             if (c == '.') {
 
@@ -633,7 +636,7 @@ namespace Hunter::Compiler {
         };
     }
 
-    ParseResult Parser::ParseBoolean(int currentPos, const std::string &input) {
+    ParseResult Parser::ParseBoolean(int currentPos,  int endPosition, const std::string &input) {
 
         std::string str;
         Expression * resultExpr;
@@ -641,7 +644,7 @@ namespace Hunter::Compiler {
         int8_t operandsNumber = 0;
         int8_t currentOperand = 0;
 
-        for (int i = currentPos; i < input.length(); ++i, currentPos++) {
+        for (int i = currentPos; i < endPosition; ++i, currentPos++) {
             char c = input.at(i);
 
             if (c == '"') {
@@ -666,7 +669,7 @@ namespace Hunter::Compiler {
                     }
 
                 } else {
-                    ParseResult result = ParseExpression(-1, str);
+                    ParseResult result = ParseExpression(-1, str.length(), str);
 
                     if (currentOperator != OperatorType::NoOperator) {
                         currentOperand += 1;
@@ -701,7 +704,7 @@ namespace Hunter::Compiler {
         }
 
         if (!str.empty()) {
-            ParseResult result = ParseExpression(-1, str);
+            ParseResult result = ParseExpression(-1, str.length(), str);
 
             if (currentOperator != OperatorType::NoOperator) {
                 currentOperand += 1;
@@ -727,7 +730,7 @@ namespace Hunter::Compiler {
         };
     }
 
-    ParseResult Parser::ParseVariableDeclaration(int currentPos, const std::string &input, VariableHandlingType handlingType) {
+    ParseResult Parser::ParseVariableDeclaration(int currentPos,  int endPosition, const std::string &input, VariableHandlingType handlingType) {
 
         std::string str;
         std::string variableName;
@@ -735,7 +738,7 @@ namespace Hunter::Compiler {
 
         bool isParsingVariable = false;
 
-        for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
+        for (int i = currentPos+1; i < endPosition; ++i, currentPos++) {
             char c = input.at(i);
             if (isspace(c) && isParsingVariable) {
                 variableName = str;
@@ -746,7 +749,7 @@ namespace Hunter::Compiler {
             } else if (variableName.empty() && !isParsingVariable) {
                 isParsingVariable = true;
             } else if (!variableName.empty() && c == '=') {
-                ParseResult result = ParseFullExpression(currentPos+2, input);
+                ParseResult result = ParseFullExpression(currentPos+2, endPosition, input);
                 value = result.Expr;
                 currentPos = result.Pos+1;
             }
@@ -776,12 +779,12 @@ namespace Hunter::Compiler {
         };
     }
 
-    ParseResult Parser::ParseInt(int currentPos, const std::string &input) {
+    ParseResult Parser::ParseInt(int currentPos,  int endPosition, const std::string &input) {
 
         std::string str;
         bool isNegative = false;
 
-        for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
+        for (int i = currentPos+1; i < endPosition; ++i, currentPos++) {
             char c = input.at(i);
 
             if (c == '-') {
@@ -810,13 +813,13 @@ namespace Hunter::Compiler {
         };
     }
 
-    ParseResult Parser::ParseFunctionCall(int currentPos, const std::string &input) {
+    ParseResult Parser::ParseFunctionCall(int currentPos,  int endPosition, const std::string &input) {
         std::vector<Expression *> parameters;
 
         std::string str;
         bool isParsingParameter = false;
 
-        for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
+        for (int i = currentPos+1; i < endPosition; ++i, currentPos++) {
             char c = input.at(i);
 
             if (isspace(c) || c == ',' || c == '(' || c == ')') {
@@ -832,9 +835,9 @@ namespace Hunter::Compiler {
                             continue;
                         }
 
-                        result = ParseString(0, str);
+                        result = ParseString(0, str.length(), str);
                     } else {
-                        result = ParseExpression(-1, str);
+                        result = ParseExpression(-1, str.length(), str);
                     }
 
                     if (!result.Expr) {
@@ -861,10 +864,10 @@ namespace Hunter::Compiler {
         };
     }
 
-    ParseResult Parser::ParseIdentifier(int currentPos, const std::string &input) {
+    ParseResult Parser::ParseIdentifier(int currentPos,  int endPosition, const std::string &input) {
         std::string str;
 
-        for (int i = currentPos+1; i < input.length(); ++i, currentPos++) {
+        for (int i = currentPos+1; i < endPosition; ++i, currentPos++) {
             char c = input.at(i);
 
             if (!isalnum(c) && c != '_') {

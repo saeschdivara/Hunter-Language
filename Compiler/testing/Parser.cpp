@@ -141,4 +141,14 @@ TEST_CASE( "Simple instructions are parsed", "[parser]" ) {
         REQUIRE( dynamic_cast<IdentifierExpression *>(conditionExpr->Left()) );
         REQUIRE( dynamic_cast<StringExpression *>(conditionExpr->Right()) );
     }
+
+    SECTION("single line comments") {
+        Parser parser;
+
+        auto * expr = parser.ParseLine(R"( print("We also have a comment here") # on the print line)");
+        REQUIRE( dynamic_cast<PrintExpression *>(expr) );
+
+        auto * printExpr = dynamic_cast<PrintExpression *>(expr);
+        REQUIRE( dynamic_cast<FunctionCallExpression *>(printExpr->GetInput()) );
+    }
 }

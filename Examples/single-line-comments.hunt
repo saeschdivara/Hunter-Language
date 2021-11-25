@@ -1,4 +1,4 @@
 fun hunt()
   # before the print line
-  print("We also have a comment here") # on the print line
+  print("We also have a comment here\n") # on the print line
   # after the print line
