@@ -47,6 +47,27 @@ namespace Hunter::Compiler {
                 m_Module
         );
 
+        ///////////////////////////  STANDARD FUNCTIONS ///////////////////////////
+        /////// int strcmp(const char *__s1, const char *__s2) {}
+        auto *strcmpFuncType = llvm::FunctionType::get(
+                llvm::Type::getInt32Ty(m_Context),
+                std::vector<llvm::Type *>({
+                    llvm::Type::getInt8PtrTy(m_Context),
+                    llvm::Type::getInt8PtrTy(m_Context)
+                }),
+                false
+        );
+
+        llvm::Function *strcmpFunc = llvm::Function::Create(
+                strcmpFuncType,
+                llvm::Function::ExternalLinkage,
+                "strcmp",
+                m_Module
+        );
+
+        m_Functions["strcmp"] = strcmpFunc;
+
+        /////// printf
         auto *printfFuncType = llvm::FunctionType::get(
                 llvm::Type::getInt32Ty(m_Context),
                 std::vector<llvm::Type *>({llvm::Type::getInt8PtrTy(m_Context)}),
@@ -61,6 +82,8 @@ namespace Hunter::Compiler {
         );
 
         m_Functions["printf"] = printfFunc;
+
+        ///////////////////////////  STANDARD FUNCTIONS ///////////////////////////
 
         llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(m_Context, "EntryBlock", hunterFunction);
         auto *builder = new llvm::IRBuilder<>(entryBlock);
@@ -505,6 +528,9 @@ namespace Hunter::Compiler {
         } else if (auto *identifierExpr = dynamic_cast<IdentifierExpression *>(expr)) {
             std::string variableName = identifierExpr->GetVariableName();
             return GetVariableValue(builder, variableName);
+        } else if (auto *strExpr = dynamic_cast<StringExpression *>(expr)) {
+            llvm::GlobalVariable *strData = builder->CreateGlobalString(llvm::StringRef(strExpr->GetString()));
+            return strData;
         }
 
         std::cerr << "Could not map expression to value" << std::endl;
@@ -534,10 +560,7 @@ namespace Hunter::Compiler {
 
         switch (condition->GetOperator()) {
             case OperatorType::LogicalEquals:
-                return builder->CreateICmpEQ(
-                        GetValueFromExpression(builder, condition->Left()),
-                        GetValueFromExpression(builder, condition->Right())
-                );
+                return GetEqualsCondition(builder, condition);
             case OperatorType::LogicalLower:
                 return builder->CreateICmpSLT(
                         GetValueFromExpression(builder, condition->Left()),
@@ -562,6 +585,44 @@ namespace Hunter::Compiler {
                 std::cerr << "Not supported operator used: " << GetOperatorString(condition->GetOperator())
                           << std::endl;
                 exit(1);
+        }
+    }
+
+    bool CodeGenerator::IsString(Expression * expr) {
+        if (dynamic_cast<StringExpression *>(expr)) {
+            return true;
+        }
+        if (auto * identifierExpr = dynamic_cast<IdentifierExpression *>(expr)) {
+            return dynamic_cast<StringExpression *>(m_VariablesExpression[identifierExpr->GetVariableName()]);
+        }
+        else {
+            return false;
+        }
+    }
+
+    llvm::Value *CodeGenerator::GetEqualsCondition(llvm::IRBuilder<> *builder, BooleanExpression *condition) {
+
+        if (dynamic_cast<IntExpression *>(condition->Left()) && dynamic_cast<IntExpression *>(condition->Right())) {
+            return builder->CreateICmpEQ(
+                    GetValueFromExpression(builder, condition->Left()),
+                    GetValueFromExpression(builder, condition->Right())
+            );
+        }
+        else if (IsString(condition->Left()) && IsString(condition->Right())) {
+            std::vector<llvm::Value *> params;
+            params.push_back(GetValueFromExpression(builder, condition->Left()));
+            params.push_back(GetValueFromExpression(builder, condition->Right()));
+
+            llvm::Value * compareResult = builder->CreateCall(m_Functions["strcmp"], llvm::ArrayRef(params));
+
+            return builder->CreateICmpEQ(
+                    compareResult,
+                    builder->getInt32(0)
+            );
+        }
+        else {
+            std::cerr << "Unsupported equals operation between these two types" << std::endl;
+            exit(1);
         }
     }
 }

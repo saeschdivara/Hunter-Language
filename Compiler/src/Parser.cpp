@@ -633,6 +633,14 @@ namespace Hunter::Compiler {
         for (int i = currentPos; i < input.length(); ++i, currentPos++) {
             char c = input.at(i);
 
+            if (c == '"') {
+                do {
+                    str.push_back(c);
+                    c = input.at(++i);
+                    currentPos++;
+                } while (c != '"');
+            }
+
             if (isspace(c) && !str.empty()) {
                 OperatorType operatorType = GetOperatorFromString(str);
                 if (operatorType != OperatorType::NoOperator) {
@@ -681,27 +689,25 @@ namespace Hunter::Compiler {
             str.push_back(c);
         }
 
-        ParseResult result = ParseExpression(-1, str);
+        if (!str.empty()) {
+            ParseResult result = ParseExpression(-1, str);
 
-        if (currentOperator != OperatorType::NoOperator) {
-            currentOperand += 1;
+            if (currentOperator != OperatorType::NoOperator) {
+                currentOperand += 1;
 
-            if (currentOperand == operandsNumber) {
+                if (currentOperand == operandsNumber) {
 
-                if (operandsNumber == 1) {
-                    resultExpr = new BooleanExpression(currentOperator, result.Expr, nullptr);
+                    if (operandsNumber == 1) {
+                        resultExpr = new BooleanExpression(currentOperator, result.Expr, nullptr);
+                    }
+                    else if (operandsNumber == 2) {
+                        resultExpr = new BooleanExpression(currentOperator, resultExpr, result.Expr);
+                    }
                 }
-                else if (operandsNumber == 2) {
-                    resultExpr = new BooleanExpression(currentOperator, resultExpr, result.Expr);
-                }
-
-                currentOperator = OperatorType::NoOperator;
-                operandsNumber = 0;
-                currentOperand = 0;
             }
-        }
-        else {
-            resultExpr = result.Expr;
+            else {
+                resultExpr = result.Expr;
+            }
         }
 
         return {

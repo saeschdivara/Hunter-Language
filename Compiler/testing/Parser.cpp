@@ -126,4 +126,19 @@ TEST_CASE( "Simple instructions are parsed", "[parser]" ) {
         REQUIRE( funcCallExpr->GetParameters().empty() );
         REQUIRE( funcCallExpr->GetFunctionName() == "foo" );
     }
+
+    SECTION("if instruction") {
+        Parser parser;
+
+        auto * expr = parser.ParseLine(R"( if helloWorld eq \"Hello World\" then)");
+        REQUIRE( dynamic_cast<IfExpression *>(expr) );
+
+        auto * ifExpr = dynamic_cast<IfExpression *>(expr);
+        REQUIRE( dynamic_cast<BooleanExpression *>(ifExpr->GetCondition()) );
+
+        auto * conditionExpr = dynamic_cast<BooleanExpression *>(ifExpr->GetCondition());
+        REQUIRE( conditionExpr->GetOperator() == OperatorType::LogicalEquals );
+        REQUIRE( dynamic_cast<IdentifierExpression *>(conditionExpr->Left()) );
+        REQUIRE( dynamic_cast<StringExpression *>(conditionExpr->Right()) );
+    }
 }

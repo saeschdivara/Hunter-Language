@@ -47,6 +47,9 @@ namespace Hunter::Compiler {
         llvm::Value * GetValueFromExpression(llvm::IRBuilder<> *builder, Expression * expr);
         llvm::Value * GetVariableValue(llvm::IRBuilder<> *builder, const std::string & variableName);
         llvm::Value * GetConditionFromExpression(llvm::IRBuilder<> *builder, BooleanExpression * condition);
+        llvm::Value * GetEqualsCondition(llvm::IRBuilder<> *builder, BooleanExpression * condition);
+
+        bool IsString(Expression * expr);
 
     private:
         // make sure it lives as long as the module is used

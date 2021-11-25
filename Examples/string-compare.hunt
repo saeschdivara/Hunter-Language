@@ -1,0 +1,6 @@
+fun hunt()
+  const helloWorld = "Hello World"
+  if helloWorld eq "Hello World" then
+    print("The strings are the same\n")
+  else
+    print("The strings are NOT the same!\n")
