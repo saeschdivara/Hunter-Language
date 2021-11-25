@@ -1,0 +1,2 @@
+fun hunt()
+  print("hello from the new compiler")
