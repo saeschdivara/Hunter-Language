@@ -66,6 +66,40 @@ namespace Hunter::Compiler {
         }
     };
 
+    class ImportExpression : public Expression {
+    public:
+        ImportExpression(std::string module) : m_Module(std::move(module)) {}
+
+        const std::string &GetModule() const {
+            return m_Module;
+        }
+
+        void Dump(int level) override {
+            DumpSpaces(level);
+            std::cout << "Import Expression: " << GetModule() << std::endl;
+        }
+
+    private:
+        std::string m_Module;
+    };
+
+    class ModuleExpression : public Expression {
+    public:
+        ModuleExpression(std::string module) : m_Module(std::move(module)) {}
+
+        const std::string &GetModule() const {
+            return m_Module;
+        }
+
+        void Dump(int level) override {
+            DumpSpaces(level);
+            std::cout << "Module Expression: " << GetModule() << std::endl;
+        }
+
+    private:
+        std::string m_Module;
+    };
+
     class BlockExpression : public Expression {
     public:
         bool HasBlock() override {

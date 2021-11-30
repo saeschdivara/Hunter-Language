@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include "Expressions.h"
+#include "./utils/strings.h"
 
 
 namespace Hunter::Compiler {
@@ -127,7 +128,11 @@ namespace Hunter::Compiler {
             if (isspace(c) || c == '(') {
                 std::cout << "Word 1: " << str << std::endl;
 
-                if (str == "fun") {
+                if (str == "import") {
+                    ParseResult result = ParseImport(i, endPosition, input);
+                    i = result.Pos+1;
+                    expr = result.Expr;
+                } else if (str == "fun") {
                     ParseResult result = ParseFunctionHeader(i, endPosition, input);
                     i = result.Pos+1;
                     expr = result.Expr;
@@ -157,6 +162,9 @@ namespace Hunter::Compiler {
                     ParseResult result = ParseFor(i, endPosition, input);
                     i = result.Pos+1;
                     expr = result.Expr;
+                }  else if (str == "mod") {
+                    expr = new ModuleExpression("unknown");
+                    endPosition = -1; // todo: really parse module
                 } else {
 
                     ParseResult result = ParseIdentifier(-1, endPosition, str);
@@ -204,6 +212,31 @@ namespace Hunter::Compiler {
         std::cout << "Level: " << level << std::endl;
 
         return expr;
+    }
+
+    ParseResult Parser::ParseImport(int currentPos, int endPosition, const std::string &input) {
+
+        std::string str;
+        Expression * expr = nullptr;
+
+        for (int i = currentPos; i < endPosition; ++i, ++currentPos) {
+            char c = input.at(i);
+
+            if (isspace(c) && str.empty()) {
+                continue;
+            } else if (isspace(c)) {
+                std::cout << "Import: " << str << std::endl;
+                str = "";
+                continue;
+            }
+
+            str.push_back(c);
+        }
+
+        return {
+            .Pos = currentPos,
+            .Expr = new ImportExpression(str)
+        };
     }
 
     ParseResult Parser::ParseExpression(int currentPos,  int endPosition, const std::string &input) {
@@ -395,16 +428,6 @@ namespace Hunter::Compiler {
             .Pos = currentPos,
             .Expr = expr
         };
-    }
-
-    void replaceAll(std::string& str, const std::string& from, const std::string& to) {
-        if(from.empty())
-            return;
-        size_t start_pos = 0;
-        while((start_pos = str.find(from, start_pos)) != std::string::npos) {
-            str.replace(start_pos, from.length(), to);
-            start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
-        }
     }
 
     ParseResult Parser::ParseString(int currentPos,  int endPosition, const std::string &input) {

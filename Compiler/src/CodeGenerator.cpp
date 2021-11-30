@@ -126,6 +126,8 @@ namespace Hunter::Compiler {
             InsertWhileLoopExpression(builder, whileExpr);
         } else if (auto *funcCallExpr = dynamic_cast<FunctionCallExpression *>(expr)) {
             InsertFunctionCallExpression(builder, funcCallExpr);
+        } else if (auto *moduleExpr = dynamic_cast<ModuleExpression *>(expr)) {
+            // maybe this will not be here anymore
         } else {
             std::cerr << "Unhandled expression found" << std::endl;
             exit(1);
@@ -429,7 +431,14 @@ namespace Hunter::Compiler {
             }
         }
 
-        builder->CreateCall(m_Functions[funcCallExpr->GetFunctionName()], llvm::ArrayRef(ops));
+        auto functionName = funcCallExpr->GetFunctionName();
+
+        if (!m_Functions.contains(functionName)) {
+            std::cerr << "Function not defined: " << functionName << std::endl;
+            exit(1);
+        }
+
+        builder->CreateCall(m_Functions[functionName], llvm::ArrayRef(ops));
     }
 
     llvm::Constant *GetIntValue(llvm::IRBuilder<> *builder, IntExpression *expr) {
