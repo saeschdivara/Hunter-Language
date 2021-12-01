@@ -307,7 +307,7 @@ namespace Hunter::Compiler {
             else if (isalpha(c) && str.empty()) {
                 std::cout << "Word: " << str << std::endl;
 
-                ParseResult result = ParseIdentifier(i-1, endPosition, input);
+                ParseResult result = ParseIdentifier(i-1, input.length(), input);
                 i = result.Pos+1;
                 currentPos = result.Pos+1;
                 expr = result.Expr;
@@ -371,7 +371,7 @@ namespace Hunter::Compiler {
 
                 std::cout << "Current expr: " << str << std::endl;
 
-                ParseResult result = ParseExpression(-1, endPosition, str);
+                ParseResult result = ParseExpression(-1, str.length(), str);
 
                 if (!result.Expr) {
                     std::cerr << "Could not parse expression" << std::endl;
