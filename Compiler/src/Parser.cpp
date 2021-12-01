@@ -163,8 +163,9 @@ namespace Hunter::Compiler {
                     i = result.Pos+1;
                     expr = result.Expr;
                 }  else if (str == "mod") {
-                    expr = new ModuleExpression("unknown");
-                    endPosition = -1; // todo: really parse module
+                    ParseResult result = ParseModule(i, endPosition, input);
+                    i = result.Pos+1;
+                    expr = result.Expr;
                 } else {
 
                     ParseResult result = ParseIdentifier(-1, endPosition, str);
@@ -217,7 +218,7 @@ namespace Hunter::Compiler {
     ParseResult Parser::ParseImport(int currentPos, int endPosition, const std::string &input) {
 
         std::string str;
-        Expression * expr = nullptr;
+        Expression * expr;
 
         for (int i = currentPos; i < endPosition; ++i, ++currentPos) {
             char c = input.at(i);
@@ -236,6 +237,30 @@ namespace Hunter::Compiler {
         return {
             .Pos = currentPos,
             .Expr = new ImportExpression(str)
+        };
+    }
+
+    ParseResult Parser::ParseModule(int currentPos, int endPosition, const std::string &input) {
+
+        std::string str;
+        Expression * expr;
+
+        for (int i = currentPos; i < endPosition; ++i, ++currentPos) {
+            char c = input.at(i);
+
+            if (isspace(c) && str.empty()) {
+                continue;
+            } else if (isspace(c)) {
+                std::cout << "Module: " << str << std::endl;
+                break;
+            }
+
+            str.push_back(c);
+        }
+
+        return {
+                .Pos = currentPos,
+                .Expr = new ModuleExpression(str)
         };
     }
 

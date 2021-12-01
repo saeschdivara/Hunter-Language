@@ -1,4 +1,4 @@
 mod helpers
 
 fun foo()
-  print("Hello from the other side")
+  print("Hello from the other side\n")

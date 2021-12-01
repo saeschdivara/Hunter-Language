@@ -45,6 +45,7 @@ namespace Hunter::Compiler {
 
         Expression * ParseLine(const std::string & input);
         ParseResult ParseImport(int currentPos, int endPosition, const std::string & input);
+        ParseResult ParseModule(int currentPos, int endPosition, const std::string & input);
         ParseResult ParseExpression(int currentPos, int endPosition, const std::string & input);
         ParseResult ParseFullExpression(int currentPos, int endPosition, const std::string & input);
         ParseResult ParseString(int currentPos, int endPosition, const std::string & input);

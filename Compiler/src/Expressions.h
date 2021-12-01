@@ -355,6 +355,7 @@ namespace Hunter::Compiler {
         FunctionExpression(std::string name, std::vector<ParameterExpression *>  params)
             : m_Name(std::move(name)), m_Parameters(std::move(params)) {}
 
+        void SetName(const std::string & name) { m_Name = name; }
         std::string & GetName() { return m_Name; }
 
         const std::vector<ParameterExpression *> &GetParameters() const {

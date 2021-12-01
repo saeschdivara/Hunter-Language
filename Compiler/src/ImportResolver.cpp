@@ -7,10 +7,11 @@ namespace Hunter::Compiler {
 
     void ImportResolver::ResolveImports(const std::string & basePath, AbstractSyntaxTree *tree) {
         auto & instructions = tree->GetInstructions();
-        for (auto i = instructions.begin(); i != instructions.end(); ++i) {
-            Expression * instruction = *i;
+        for (int i = 0; i < instructions.size(); ++i) {
+            Expression * instruction = instructions.at(i);
+
             if (auto * importExpr = dynamic_cast<ImportExpression *>(instruction)) {
-                instructions.erase(i);
+                instructions.erase(instructions.begin() + i);
 
                 std::string module = importExpr->GetModule();
                 replaceAll(module, ".", "/");
@@ -21,7 +22,24 @@ namespace Hunter::Compiler {
                 Parser parser;
                 AbstractSyntaxTree * ast = parser.Parse(input);
                 auto & importedInstructions = ast->GetInstructions();
-                instructions.insert(instructions.begin(), importedInstructions.begin(), importedInstructions.end());
+
+                auto * moduleInstr = dynamic_cast<ModuleExpression *>(importedInstructions.at(0));
+                if (!moduleInstr) {
+                    std::cerr << "First instruction is not the module" << std::endl;
+                    exit(1);
+                }
+
+                auto storedModuleName = moduleInstr->GetModule();
+
+                for (const auto &importedInstr : importedInstructions) {
+                    if (auto * funcExpr = dynamic_cast<FunctionExpression *>(importedInstr)) {
+                        funcExpr->SetName(storedModuleName + "." + funcExpr->GetName());
+                    }
+
+                    // todo: support function calls of the module function in its own functions
+                }
+
+                instructions.insert(instructions.begin(), importedInstructions.begin()+1, importedInstructions.end());
 
                 std::cout << "Import ast:: " << std::endl;
                 ast->Dump();
