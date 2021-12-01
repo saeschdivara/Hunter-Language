@@ -40,9 +40,6 @@ namespace Hunter::Compiler {
                 }
 
                 instructions.insert(instructions.begin(), importedInstructions.begin()+1, importedInstructions.end());
-
-                std::cout << "Import ast:: " << std::endl;
-                ast->Dump();
             }
         }
     }
