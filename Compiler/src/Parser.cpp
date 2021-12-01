@@ -168,7 +168,7 @@ namespace Hunter::Compiler {
                     expr = result.Expr;
                 } else {
 
-                    ParseResult result = ParseIdentifier(-1, endPosition, str);
+                    ParseResult result = ParseIdentifier(-1, str.length(), str);
                     if (result.Expr) {
                         if (c == '(') {
                             result = ParseFunctionCall(i, endPosition, input);
