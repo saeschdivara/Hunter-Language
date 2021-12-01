@@ -101,10 +101,19 @@ namespace Hunter::Compiler {
         std::error_code err;
         llvm::raw_ostream *ostream = new llvm::raw_fd_ostream("output.bc", err);
         llvm::WriteBitcodeToFile(*m_Module, *ostream);
-
-        m_Module->print(llvm::outs(), nullptr);
-
         delete ostream;
+
+        llvm::raw_fd_ostream *moduleOutputStream = &(llvm::outs());
+
+        if (!m_DebugOutputFileName.empty()) {
+            moduleOutputStream = new llvm::raw_fd_ostream(m_DebugOutputFileName, err);
+        }
+
+        m_Module->print(*moduleOutputStream, nullptr);
+
+        if (!m_DebugOutputFileName.empty()) {
+            delete moduleOutputStream;
+        }
 
         return m_Module;
     }

@@ -31,6 +31,8 @@ namespace Hunter::Compiler {
     public:
         llvm::Module * GenerateCode(AbstractSyntaxTree * ast);
 
+        void SetDebugOutputFile(const std::string & outputFileName) { m_DebugOutputFileName = outputFileName; }
+
     protected:
         void InsertExpression(llvm::IRBuilder<> *builder, Expression * expr);
         void InsertFunctionExpression(llvm::IRBuilder<> *builder, FunctionExpression *funcExpr);
@@ -52,6 +54,8 @@ namespace Hunter::Compiler {
         bool IsString(Expression * expr);
 
     private:
+        std::string m_DebugOutputFileName;
+
         // make sure it lives as long as the module is used
         llvm::Module * m_Module;
         llvm::LLVMContext m_Context;

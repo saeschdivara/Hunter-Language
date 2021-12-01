@@ -17,6 +17,12 @@ int main(int argc, const char ** argv) {
     Hunter::Compiler::ImportResolver importResolver;
     Hunter::Compiler::CodeGenerator codeGenerator;
 
+    if (argc > 2) {
+        if (strcmp(argv[2], "--output-ir") == 0) {
+            codeGenerator.SetDebugOutputFile("output.txt");
+        }
+    }
+
     // todo: handle 1 character variable
 
     std::string filePath = std::string(argv[1]);
