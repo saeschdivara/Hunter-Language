@@ -17,9 +17,9 @@ int main(int argc, const char ** argv) {
     Hunter::Compiler::ImportResolver importResolver;
     Hunter::Compiler::CodeGenerator codeGenerator;
 
-    if (argc > 2) {
+    if (argc > 3) {
         if (strcmp(argv[2], "--output-ir") == 0) {
-            codeGenerator.SetDebugOutputFile("output.txt");
+            codeGenerator.SetDebugOutputFile(argv[3]);
         }
     }
 
