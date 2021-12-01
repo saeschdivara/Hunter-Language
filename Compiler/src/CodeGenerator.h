@@ -52,6 +52,7 @@ namespace Hunter::Compiler {
         llvm::Value * GetEqualsCondition(llvm::IRBuilder<> *builder, BooleanExpression * condition);
 
         bool IsString(Expression * expr);
+        bool IsInt(Expression * expr);
 
     private:
         std::string m_DebugOutputFileName;

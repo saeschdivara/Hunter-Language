@@ -618,9 +618,21 @@ namespace Hunter::Compiler {
         }
     }
 
+    bool CodeGenerator::IsInt(Expression *expr) {
+        if (dynamic_cast<IntExpression *>(expr)) {
+            return true;
+        }
+        if (auto * identifierExpr = dynamic_cast<IdentifierExpression *>(expr)) {
+            return dynamic_cast<IntExpression *>(m_VariablesExpression[identifierExpr->GetVariableName()]);
+        }
+        else {
+            return false;
+        }
+    }
+
     llvm::Value *CodeGenerator::GetEqualsCondition(llvm::IRBuilder<> *builder, BooleanExpression *condition) {
 
-        if (dynamic_cast<IntExpression *>(condition->Left()) && dynamic_cast<IntExpression *>(condition->Right())) {
+        if (IsInt(condition->Left()) && IsInt(condition->Right())) {
             return builder->CreateICmpEQ(
                     GetValueFromExpression(builder, condition->Left()),
                     GetValueFromExpression(builder, condition->Right())
