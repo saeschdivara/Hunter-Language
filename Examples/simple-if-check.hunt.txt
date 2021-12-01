@@ -1,0 +1,34 @@
+; ModuleID = 'Hunt'
+source_filename = "Hunt"
+
+@0 = private unnamed_addr constant [9 x i8] c"Hello 8\0A\00", align 1
+@1 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
+
+define i32 @main() {
+EntryBlock:
+  call void @hunt()
+  ret i32 0
+}
+
+declare i32 @strcmp(i8*, i8*)
+
+declare i32 @printf(i8*, ...)
+
+define internal void @hunt() {
+entry:
+  %num = alloca i8, align 1
+  store i8 8, i8* %num, align 1
+  %0 = load i8, i8* %num, align 1
+  %1 = icmp eq i8 %0, 8
+  br i1 %1, label %then, label %else
+
+then:                                             ; preds = %entry
+  %2 = call i32 (i8*, ...) @printf([3 x i8]* @1, [9 x i8]* @0)
+  br label %endIf
+
+else:                                             ; preds = %entry
+  br label %endIf
+
+endIf:                                            ; preds = %else, %then
+  ret void
+}

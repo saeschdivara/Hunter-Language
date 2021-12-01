@@ -1,0 +1,40 @@
+; ModuleID = 'Hunt'
+source_filename = "Hunt"
+
+@0 = private unnamed_addr constant [12 x i8] c"Hello World\00", align 1
+@1 = private unnamed_addr constant [12 x i8] c"Hello World\00", align 1
+@2 = private unnamed_addr constant [26 x i8] c"The strings are the same\0A\00", align 1
+@3 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
+@4 = private unnamed_addr constant [31 x i8] c"The strings are NOT the same!\0A\00", align 1
+@5 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
+
+define i32 @main() {
+EntryBlock:
+  call void @hunt()
+  ret i32 0
+}
+
+declare i32 @strcmp(i8*, i8*)
+
+declare i32 @printf(i8*, ...)
+
+define internal void @hunt() {
+entry:
+  %helloWorld = alloca i8*, align 8
+  store [12 x i8]* @0, i8** %helloWorld, align 8
+  %0 = load i8*, i8** %helloWorld, align 8
+  %1 = call i32 @strcmp(i8* %0, [12 x i8]* @1)
+  %2 = icmp eq i32 %1, 0
+  br i1 %2, label %then, label %else
+
+then:                                             ; preds = %entry
+  %3 = call i32 (i8*, ...) @printf([3 x i8]* @3, [26 x i8]* @2)
+  br label %endIf
+
+else:                                             ; preds = %entry
+  %4 = call i32 (i8*, ...) @printf([3 x i8]* @5, [31 x i8]* @4)
+  br label %endIf
+
+endIf:                                            ; preds = %else, %then
+  ret void
+}

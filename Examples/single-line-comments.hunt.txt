@@ -1,0 +1,21 @@
+; ModuleID = 'Hunt'
+source_filename = "Hunt"
+
+@0 = private unnamed_addr constant [29 x i8] c"We also have a comment here\0A\00", align 1
+@1 = private unnamed_addr constant [3 x i8] c"%s\00", align 1
+
+define i32 @main() {
+EntryBlock:
+  call void @hunt()
+  ret i32 0
+}
+
+declare i32 @strcmp(i8*, i8*)
+
+declare i32 @printf(i8*, ...)
+
+define internal void @hunt() {
+entry:
+  %0 = call i32 (i8*, ...) @printf([3 x i8]* @1, [29 x i8]* @0)
+  ret void
+}
