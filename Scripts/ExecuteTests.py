@@ -21,6 +21,29 @@ path_to_compiler = './cmake-build-debug/bin/Hunter_Compiler'
 for hunt_file, hunt_test_output in files_to_test:
     if not os.path.exists(hunt_test_output):
         ret_code = subprocess.call(f'{path_to_compiler} {hunt_file} --output-ir {hunt_test_output}'.split(' '))
+        os.remove('output.bc')
+        os.remove('output.o')
         if ret_code != 0:
             print('Compilation failed')
+            exit(1)
+
+    else:
+        with open(hunt_test_output, 'r') as test_file:
+            expected_output = test_file.read()
+
+        ret_code = subprocess.call(f'{path_to_compiler} {hunt_file} --output-ir {hunt_test_output}'.split(' '))
+        os.remove('output.bc')
+        os.remove('output.o')
+        if ret_code != 0:
+            print('Compilation failed')
+            exit(1)
+
+        with open(hunt_test_output, 'r') as test_file:
+            real_output = test_file.read()
+
+        if expected_output != real_output:
+            print(f'Outputs are not identical for {hunt_file}')
+            print(f'Expected output {expected_output}')
+            print('=====================================')
+            print(f'Actual output {real_output}')
             exit(1)
