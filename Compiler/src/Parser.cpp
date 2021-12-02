@@ -284,9 +284,23 @@ namespace Hunter::Compiler {
             }
 
             else if (c == '(') {
-                std::cout << "Word: " << str << std::endl;
-                str = "";
-                continue;
+
+                if (auto * identifierExpr = dynamic_cast<IdentifierExpression *>(expr)) {
+                    // this is actually a function call
+
+                    ParseResult result = ParseFunctionCall(i, endPosition, input);
+                    dynamic_cast<FunctionCallExpression *>(result.Expr)->SetFunctionName(identifierExpr->GetVariableName());
+
+                    i = result.Pos+1;
+                    currentPos = result.Pos+1;
+                    expr = result.Expr;
+
+                } else {
+                    std::cout << "Word: " << str << std::endl;
+                    str = "";
+                    continue;
+                }
+
             }
 
             else if (c == ')') {
@@ -312,12 +326,12 @@ namespace Hunter::Compiler {
                 std::cout << "Word: " << str << std::endl;
 
                 ParseResult result = ParseIdentifier(i-1, input.length(), input);
-                i = result.Pos+1;
-                currentPos = result.Pos+1;
+                i = result.Pos;
+                currentPos = result.Pos;
                 expr = result.Expr;
 
                 str = "";
-                break;
+                continue;
             }
 
             // parse number
