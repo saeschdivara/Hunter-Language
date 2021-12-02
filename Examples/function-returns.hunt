@@ -1,0 +1,6 @@
+fun returning_function() : i8
+    return 8
+
+fun hunt()
+    const output = returning_function()
+    print(output, "\n")

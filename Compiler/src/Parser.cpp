@@ -166,6 +166,9 @@ namespace Hunter::Compiler {
                     ParseResult result = ParseModule(i, endPosition, input);
                     i = result.Pos+1;
                     expr = result.Expr;
+                }  else if (str == "return") {
+                    std::cerr << "Function return instruction not implemented yet" << std::endl;
+                    exit(1);
                 } else {
 
                     ParseResult result = ParseIdentifier(-1, str.length(), str);
