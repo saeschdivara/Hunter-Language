@@ -482,8 +482,10 @@ namespace Hunter::Compiler {
 
         std::string functionName;
         std::string parameter;
+        std::string returnTypeExpressionStr;
         bool isNameParsing = true;
         bool isParametersParsing = false;
+        bool isReturnParsing = false;
 
         std::vector<ParameterExpression *> parametersList;
 
@@ -495,33 +497,46 @@ namespace Hunter::Compiler {
                 continue;
             }
 
-            if (isspace(c)) {
+            else if (isspace(c)) {
                 continue;
             }
 
-            if (c == '(') {
+            else if (c == '(') {
                 isNameParsing = false;
                 isParametersParsing = true;
                 continue;
             }
 
-            if (isParametersParsing && (c == ',' || c == ')') && !parameter.empty()) {
-                std::cout << "Parameter: " << parameter << std::endl;
-                auto index = parameter.find(':');
+            else if (!isParametersParsing && c == ':') {
+                isNameParsing = false;
+                isParametersParsing = false;
+                isReturnParsing = true;
+                continue;
+            }
 
-                if (index > parameter.length()) {
-                    std::cerr << ": is missing for parameter type" << std::endl;
-                    exit(1);
+            else if (isParametersParsing && (c == ',' || c == ')')) {
+                if (!parameter.empty()) {
+                    std::cout << "Parameter: " << parameter << std::endl;
+                    auto index = parameter.find(':');
+
+                    if (index > parameter.length()) {
+                        std::cerr << ": is missing for parameter type" << std::endl;
+                        exit(1);
+                    }
+
+                    std::string parameterName = parameter.substr(0, index);
+                    std::string parameterType = parameter.substr(index+1, parameter.size());
+
+                    parametersList.push_back(
+                            new ParameterExpression(parameterName, GetDataTypeFromString(parameterType))
+                    );
+
+                    parameter = "";
                 }
 
-                std::string parameterName = parameter.substr(0, index);
-                std::string parameterType = parameter.substr(index+1, parameter.size());
-
-                parametersList.push_back(
-                    new ParameterExpression(parameterName, GetDataTypeFromString(parameterType))
-                );
-
-                parameter = "";
+                if (c == ')') {
+                    isParametersParsing = false;
+                }
             }
             else if (isParametersParsing) {
                 parameter.push_back(c);
@@ -529,12 +544,21 @@ namespace Hunter::Compiler {
             else if (isNameParsing) {
                 functionName.push_back(c);
             }
+            else if (isReturnParsing) {
+                returnTypeExpressionStr.push_back(c);
+            }
 
+        }
+
+        auto * funcExpr = new FunctionExpression(functionName, parametersList);
+
+        if (!returnTypeExpressionStr.empty()) {
+            funcExpr->SetReturnType(GetDataTypeFromString(returnTypeExpressionStr));
         }
 
         return {
             .Pos = currentPos,
-            .Expr = new FunctionExpression(functionName, parametersList)
+            .Expr = funcExpr
         };
     }
 

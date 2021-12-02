@@ -24,6 +24,7 @@ namespace Hunter::Compiler {
     };
 
     DataType GetDataTypeFromString(const std::string & typeStr);
+    std::string GetDataTypeString(DataType dataType);
 
     IntType GetTypeFromValue(int64_t val);
 
@@ -362,9 +363,17 @@ namespace Hunter::Compiler {
             return m_Parameters;
         }
 
+        DataType GetReturnType() const {
+            return m_ReturnType;
+        }
+
+        void SetReturnType(DataType returnType) {
+            m_ReturnType = returnType;
+        }
+
         void Dump(int level) override {
             DumpSpaces(level);
-            std::cout << "Function Expression: " << GetName() << std::endl;
+            std::cout << "Function Expression: " << GetName() << " : " << GetDataTypeString(GetReturnType()) << std::endl;
 
             DumpSpaces(level+1);
             std::cout << "Parameters:" << std::endl;
@@ -382,6 +391,7 @@ namespace Hunter::Compiler {
     private:
         std::string m_Name;
         std::vector<ParameterExpression *> m_Parameters;
+        DataType m_ReturnType;
     };
 
     class RangeExpression : public Expression {

@@ -23,6 +23,23 @@ namespace Hunter::Compiler {
         }
     }
 
+    std::string GetDataTypeString(DataType dataType) {
+        switch (dataType) {
+            case DataType::i8:
+                return "i8";
+            case DataType::i16:
+                return "i16";
+            case DataType::i32:
+                return "i32";
+            case DataType::i64:
+                return "i64";
+            case DataType::String:
+                return "String";
+            case DataType::Unknown:
+                return "Unknown";
+        }
+    }
+
     IntType GetTypeFromValue(int64_t val) {
         if (val >= INT8_MIN && val <= INT8_MAX) {
             return IntType::i8;
