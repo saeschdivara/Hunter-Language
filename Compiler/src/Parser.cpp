@@ -167,8 +167,9 @@ namespace Hunter::Compiler {
                     i = result.Pos+1;
                     expr = result.Expr;
                 }  else if (str == "return") {
-                    std::cerr << "Function return instruction not implemented yet" << std::endl;
-                    exit(1);
+                    ParseResult result = ParseFunctionReturn(i, endPosition, input);
+                    i = result.Pos+1;
+                    expr = result.Expr;
                 } else {
 
                     ParseResult result = ParseIdentifier(-1, str.length(), str);
@@ -559,6 +560,15 @@ namespace Hunter::Compiler {
         return {
             .Pos = currentPos,
             .Expr = funcExpr
+        };
+    }
+
+    ParseResult Parser::ParseFunctionReturn(int currentPos, int endPosition, const std::string &input) {
+        ParseResult result = ParseExpression(currentPos, endPosition, input);
+
+        return {
+            .Pos = result.Pos,
+            .Expr = new FunctionReturnExpression(result.Expr)
         };
     }
 

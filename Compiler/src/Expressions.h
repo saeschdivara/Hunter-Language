@@ -304,6 +304,21 @@ namespace Hunter::Compiler {
         std::string m_VariableName;
     };
 
+    class FunctionReturnExpression : public Expression {
+    public:
+        FunctionReturnExpression(Expression * expr) : m_ReturnExpr(expr) {}
+        Expression * GetValue() { return m_ReturnExpr; }
+
+        void Dump(int level) override {
+            DumpSpaces(level);
+            std::cout << "Function Return Expression: " << std::endl;
+            GetValue()->Dump(level+1);
+        }
+
+    private:
+        Expression * m_ReturnExpr;
+    };
+
     class FunctionCallExpression : public Expression {
     public:
         FunctionCallExpression(std::vector<Expression *> parameters) : m_Parameters(std::move(parameters)) {}

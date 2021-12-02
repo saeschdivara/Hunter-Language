@@ -33,6 +33,8 @@ int main(int argc, const char ** argv) {
 
     ast->Dump();
 
+    // todo: validate ast -> like return values matching return type
+
     llvm::Module * module = codeGenerator.GenerateCode(ast);
     Hunter::Compiler::CompileModule(module);
 
