@@ -3,6 +3,7 @@
 #include "CodeGenerator.h"
 #include "Compiler.h"
 #include "./utils/files.h"
+#include "./utils/logger.h"
 
 #include <filesystem>
 
@@ -12,6 +13,8 @@ int main(int argc, const char ** argv) {
         std::cerr << "Did not find parameter for file" << std::endl;
         exit(1);
     }
+
+    Hunter::Compiler::Logger::Init();
 
     Hunter::Compiler::Parser parser;
     Hunter::Compiler::ImportResolver importResolver;
