@@ -24,6 +24,7 @@ namespace Hunter::Compiler {
     class VariableMutationExpression;
     class PrintExpression;
     class FunctionCallExpression;
+    class FunctionReturnExpression;
     class IntExpression;
     class AbstractSyntaxTree;
 
@@ -40,10 +41,11 @@ namespace Hunter::Compiler {
         void InsertForLoopExpression(llvm::IRBuilder<> *builder, ForLoopExpression *forExpr);
         void InsertWhileLoopExpression(llvm::IRBuilder<> *builder, WhileExpression *whileExpr);
         void InsertPrintExpression(llvm::IRBuilder<> *builder, PrintExpression *constExpr);
-        void InsertFunctionCallExpression(llvm::IRBuilder<> *builder, FunctionCallExpression *funcCallExpr);
+        llvm::Value * InsertFunctionCallExpression(llvm::IRBuilder<> *builder, FunctionCallExpression *funcCallExpr);
         void InsertConstExpression(llvm::IRBuilder<> *builder, ConstExpression *constExpr);
         void InsertLetExpression(llvm::IRBuilder<> *builder, LetExpression *letExpr);
         void InsertVarMutationExpression(llvm::IRBuilder<> *builder, VariableMutationExpression *varMutExpr);
+        void InsertFuncReturnExpression(llvm::IRBuilder<> *builder, FunctionReturnExpression * retExpr);
         void InsertIntExpression(llvm::IRBuilder<> *builder, const std::string & variableName, IntExpression *intExpr);
 
         llvm::Value * GetValueFromExpression(llvm::IRBuilder<> *builder, Expression * expr);
@@ -62,6 +64,7 @@ namespace Hunter::Compiler {
         llvm::LLVMContext m_Context;
 
         std::unordered_map<std::string, llvm::Function *> m_Functions;
+        std::unordered_map<std::string, FunctionExpression *> m_FunctionsDefinitions;
         std::unordered_map<std::string, llvm::Value *> m_Variables;
         std::unordered_map<std::string, Expression *> m_VariablesExpression;
     };

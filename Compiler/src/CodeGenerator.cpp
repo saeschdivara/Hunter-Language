@@ -1,6 +1,7 @@
 #include "CodeGenerator.h"
 #include "Parser.h"
 #include "Expressions.h"
+#include "utils/logger.h"
 
 #include <iostream>
 
@@ -17,10 +18,8 @@ namespace Hunter::Compiler {
 
     llvm::Type *GetTypeFromDataType(llvm::IRBuilder<> *builder, DataType dataType) {
         switch (dataType) {
-            case DataType::Unknown: {
-                std::cerr << "Cannot convert from unknown data type" << std::endl;
-                exit(1);
-            }
+            case DataType::Unknown:
+                return builder->getVoidTy();
             case DataType::String:
                 return builder->getInt8PtrTy();
             case DataType::i8:
@@ -31,6 +30,23 @@ namespace Hunter::Compiler {
                 return builder->getInt32Ty();
             case DataType::i64:
                 return builder->getInt64Ty();
+        }
+    }
+
+    std::string GetFormatPlaceholderFromDataType(DataType dataType) {
+        switch (dataType) {
+            case DataType::Unknown: {
+                COMPILER_ERROR("Unknown data type has no format string");
+                exit(1);
+            }
+            case DataType::String:
+                return "%s";
+            case DataType::i8:
+            case DataType::i16:
+            case DataType::i32:
+                return "%d";
+            case DataType::i64:
+                return "%lld";
         }
     }
 
@@ -135,6 +151,8 @@ namespace Hunter::Compiler {
             InsertWhileLoopExpression(builder, whileExpr);
         } else if (auto *funcCallExpr = dynamic_cast<FunctionCallExpression *>(expr)) {
             InsertFunctionCallExpression(builder, funcCallExpr);
+        } else if (auto *retExpr = dynamic_cast<FunctionReturnExpression *>(expr)) {
+            InsertFuncReturnExpression(builder, retExpr);
         } else if (auto *moduleExpr = dynamic_cast<ModuleExpression *>(expr)) {
             // maybe this will not be here anymore
         } else {
@@ -169,7 +187,8 @@ namespace Hunter::Compiler {
                 parameterDescriptions.push_back(GetTypeFromDataType(builder, parameter->GetDataType()));
             }
 
-            auto *simpleFuncType = llvm::FunctionType::get(llvm::Type::getVoidTy(m_Context), parameterDescriptions, false);
+            DataType returnType = funcExpr->GetReturnType();
+            auto *simpleFuncType = llvm::FunctionType::get(GetTypeFromDataType(builder, returnType), parameterDescriptions, false);
 
             currentFunction = llvm::Function::Create(
                     simpleFuncType,
@@ -188,6 +207,7 @@ namespace Hunter::Compiler {
             llvm::BasicBlock::Create(m_Context, "entry", currentFunction);
 
             m_Functions[funcExpr->GetName()] = currentFunction;
+            m_FunctionsDefinitions[funcExpr->GetName()] = funcExpr;
         }
 
         llvm::IRBuilder<> funcBlockBuilder(&currentFunction->getEntryBlock(), currentFunction->getEntryBlock().begin());
@@ -357,7 +377,7 @@ namespace Hunter::Compiler {
                 } else if (auto *identifierExpr = dynamic_cast<IdentifierExpression *>(parameter)) {
                     std::string variableName = identifierExpr->GetVariableName();
                     if (!m_Variables.contains(variableName)) {
-                        std::cerr << "Could not find variable " << variableName << std::endl;
+                        COMPILER_ERROR("Could not find variable {0}", variableName);
                         exit(1);
                     }
 
@@ -399,11 +419,17 @@ namespace Hunter::Compiler {
                                 formatString += "%d";
                             }
                         }
+                    } else if (auto * funcCallExpr = dynamic_cast<FunctionCallExpression *>(variableExpr)) {
+                        auto * funcDef = m_FunctionsDefinitions[funcCallExpr->GetFunctionName()];
+                        auto * funcReturnType = GetTypeFromDataType(builder, funcDef->GetReturnType());
+                        auto * funcReturnValue = builder->CreateLoad(funcReturnType, m_Variables[variableName]);
+                        ops.push_back(funcReturnValue);
+                        formatString += GetFormatPlaceholderFromDataType(funcDef->GetReturnType());
                     } else if (!variableExpr) {
-                        std::cerr << "Invalid expression found for variable " << variableName << std::endl;
+                        COMPILER_ERROR("Invalid expression found for variable {0}", variableName);
                         exit(1);
                     } else {
-                        std::cerr << "Unknown expression type of variable " << variableName << std::endl;
+                        COMPILER_ERROR("Unknown expression type of variable {0}", variableName);
                         exit(1);
                     }
 
@@ -420,7 +446,7 @@ namespace Hunter::Compiler {
         }
     }
 
-    void CodeGenerator::InsertFunctionCallExpression(llvm::IRBuilder<> *builder, FunctionCallExpression *funcCallExpr) {
+    llvm::Value * CodeGenerator::InsertFunctionCallExpression(llvm::IRBuilder<> *builder, FunctionCallExpression *funcCallExpr) {
         std::vector<llvm::Value *> ops;
 
         for (const auto &parameter : funcCallExpr->GetParameters()) {
@@ -447,7 +473,7 @@ namespace Hunter::Compiler {
             exit(1);
         }
 
-        builder->CreateCall(m_Functions[functionName], llvm::ArrayRef(ops));
+        return builder->CreateCall(m_Functions[functionName], llvm::ArrayRef(ops));
     }
 
     llvm::Constant *GetIntValue(llvm::IRBuilder<> *builder, IntExpression *expr) {
@@ -482,6 +508,19 @@ namespace Hunter::Compiler {
             builder->CreateStore(strData, var);
         } else if (auto *intExpr = dynamic_cast<IntExpression *>(value)) {
             InsertIntExpression(builder, variableName, intExpr);
+        } else if (auto *funcCallExpr = dynamic_cast<FunctionCallExpression *>(value)) {
+            auto * func = m_FunctionsDefinitions[funcCallExpr->GetFunctionName()];
+            DataType returnType = func->GetReturnType();
+            auto *var = builder->CreateAlloca(GetTypeFromDataType(builder, returnType), nullptr, variableName);
+
+            m_Variables[variableName] = var;
+            m_VariablesExpression[variableName] = value;
+
+            llvm::Value * funcReturnVal = InsertFunctionCallExpression(builder, funcCallExpr);
+            builder->CreateStore(funcReturnVal, var);
+        } else {
+            std::cerr << "Const assignment for \"" << variableName << "\" with unknown type" << std::endl;
+            exit(1);
         }
     }
 
@@ -528,6 +567,10 @@ namespace Hunter::Compiler {
             std::cerr << "Variable mutation without operation expr not implemented" << std::endl;
             exit(1);
         }
+    }
+
+    void CodeGenerator::InsertFuncReturnExpression(llvm::IRBuilder<> *builder, FunctionReturnExpression *retExpr) {
+        builder->CreateRet(GetValueFromExpression(builder, retExpr->GetValue()));
     }
 
     void CodeGenerator::InsertIntExpression(llvm::IRBuilder<> *builder, const std::string &variableName,
