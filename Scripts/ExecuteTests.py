@@ -6,6 +6,7 @@ files_to_test = [
     ('./Examples/for-loop.hunt', './Examples/for-loop.hunt.txt'),
     ('./Examples/function-calls-with-parameters.hunt', './Examples/function-calls-with-parameters.hunt.txt'),
     ('./Examples/function-calls-without-parameters.hunt', './Examples/function-calls-without-parameters.hunt.txt'),
+    ('./Examples/function-returns.hunt', './Examples/function-returns.hunt.txt'),
     ('./Examples/hello-world.hunt', './Examples/hello-world.hunt.txt'),
     ('./Examples/if-else-conditions.hunt', './Examples/if-else-conditions.hunt.txt'),
     ('./Examples/print-string-const.hunt', './Examples/print-string-const.hunt.txt'),
@@ -14,6 +15,7 @@ files_to_test = [
     ('./Examples/string-compare.hunt', './Examples/string-compare.hunt.txt'),
     ('./Examples/use-all-int-types.hunt', './Examples/use-all-int-types.hunt.txt'),
     ('./Examples/while-loop.hunt', './Examples/while-loop.hunt.txt'),
+    ('./Examples/modules/using-modules.hunt', './Examples/modules/using-modules.hunt.txt'),
 ]
 
 path_to_compiler = './cmake-build-debug/bin/Hunter_Compiler'
@@ -32,10 +34,13 @@ for hunt_file, hunt_test_output in files_to_test:
             expected_output = test_file.read()
 
         ret_code = subprocess.call(f'{path_to_compiler} {hunt_file} --output-ir {hunt_test_output}'.split(' '))
-        os.remove('output.bc')
-        os.remove('output.o')
+
+        if os.path.exists('output.o'):
+            os.remove('output.bc')
+            os.remove('output.o')
+
         if ret_code != 0:
-            print('Compilation failed')
+            print(f'Compilation failed for {hunt_file}')
             exit(1)
 
         with open(hunt_test_output, 'r') as test_file:
