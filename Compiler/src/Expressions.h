@@ -15,7 +15,7 @@ namespace Hunter::Compiler {
     };
 
     enum class DataType {
-        Unknown = 0,
+        Void = 0,
         String  = 1,
         i8      = static_cast<int>(IntType::i8),
         i16     = static_cast<int>(IntType::i16),
@@ -406,7 +406,7 @@ namespace Hunter::Compiler {
     private:
         std::string m_Name;
         std::vector<ParameterExpression *> m_Parameters;
-        DataType m_ReturnType;
+        DataType m_ReturnType = DataType::Void;
     };
 
     class RangeExpression : public Expression {

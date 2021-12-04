@@ -18,7 +18,7 @@ namespace Hunter::Compiler {
 
     llvm::Type *GetTypeFromDataType(llvm::IRBuilder<> *builder, DataType dataType) {
         switch (dataType) {
-            case DataType::Unknown:
+            case DataType::Void:
                 return builder->getVoidTy();
             case DataType::String:
                 return builder->getInt8PtrTy();
@@ -35,7 +35,7 @@ namespace Hunter::Compiler {
 
     std::string GetFormatPlaceholderFromDataType(DataType dataType) {
         switch (dataType) {
-            case DataType::Unknown: {
+            case DataType::Void: {
                 COMPILER_ERROR("Unknown data type has no format string");
                 exit(1);
             }

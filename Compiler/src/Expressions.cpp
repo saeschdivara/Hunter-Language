@@ -19,7 +19,7 @@ namespace Hunter::Compiler {
             return DataType::i64;
         }
         else {
-            return DataType::Unknown;
+            return DataType::Void;
         }
     }
 
@@ -35,7 +35,7 @@ namespace Hunter::Compiler {
                 return "i64";
             case DataType::String:
                 return "String";
-            case DataType::Unknown:
+            case DataType::Void:
                 return "Unknown";
         }
     }
