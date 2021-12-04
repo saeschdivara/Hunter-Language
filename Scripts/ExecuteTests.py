@@ -2,6 +2,7 @@ import os
 import subprocess
 
 files_to_test = [
+    ('./Examples/c-library-integration.hunt', './Examples/c-library-integration.hunt.txt'),
     ('./Examples/first-const-string.hunt', './Examples/first-const-string.hunt.txt'),
     ('./Examples/for-loop.hunt', './Examples/for-loop.hunt.txt'),
     ('./Examples/function-calls-with-parameters.hunt', './Examples/function-calls-with-parameters.hunt.txt'),

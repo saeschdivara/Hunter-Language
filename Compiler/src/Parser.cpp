@@ -256,6 +256,8 @@ namespace Hunter::Compiler {
             exit(1);
         }
 
+        (dynamic_cast<FunctionExpression *>(result.Expr))->SetExternal(true);
+
         return {
             .Pos = result.Pos,
             .Expr = new ExternExpression(result.Expr)

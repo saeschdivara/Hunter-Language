@@ -463,13 +463,22 @@ namespace Hunter::Compiler {
             m_ReturnType = returnType;
         }
 
+        bool IsExternal() const {
+            return m_IsExternal;
+        }
+
+        void SetExternal(bool external) {
+            m_IsExternal = external;
+        }
+
         const char *GetClassName() override {
             return "FunctionExpression";
         }
 
         void Dump(int level) override {
             DumpSpaces(level);
-            std::cout << "Function Expression: " << GetName() << " : " << GetDataTypeString(GetReturnType()) << std::endl;
+            std::string externalStr = m_IsExternal ? "extern " : "";
+            std::cout << "Function Expression: " << externalStr << GetName() << " : " << GetDataTypeString(GetReturnType()) << std::endl;
 
             DumpSpaces(level+1);
             std::cout << "Parameters:" << std::endl;
@@ -485,6 +494,7 @@ namespace Hunter::Compiler {
         }
 
     private:
+        bool m_IsExternal = false;
         std::string m_Name;
         std::vector<ParameterExpression *> m_Parameters;
         DataType m_ReturnType = DataType::Void;

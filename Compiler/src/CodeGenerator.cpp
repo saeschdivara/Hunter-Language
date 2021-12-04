@@ -216,11 +216,15 @@ namespace Hunter::Compiler {
                 argumentCounter++;
             }
 
-            // Create a new basic block to start insertion into.
-            llvm::BasicBlock::Create(m_Context, "entry", currentFunction);
-
             m_Functions[functionName] = currentFunction;
             m_FunctionsDefinitions[functionName] = funcExpr;
+
+            if (funcExpr->IsExternal()) {
+                return;
+            }
+
+            // Create a new basic block to start insertion into.
+            llvm::BasicBlock::Create(m_Context, "entry", currentFunction);
         }
 
         llvm::IRBuilder<> funcBlockBuilder(&currentFunction->getEntryBlock(), currentFunction->getEntryBlock().begin());
@@ -639,8 +643,9 @@ namespace Hunter::Compiler {
         } else if (auto *intValExpr = dynamic_cast<IntExpression *>(variableExpr)) {
             IntType type = intValExpr->GetType();
             return builder->CreateLoad(GetVariableTypeForInt(builder, type), m_Variables[variableName]);
-        } else if (dynamic_cast<FunctionCallExpression *>(variableExpr)) {
-            return m_Variables[variableName];
+        } else if (auto * funcCallExpr = dynamic_cast<FunctionCallExpression *>(variableExpr)) {
+            auto * funcDef = m_FunctionsDefinitions[funcCallExpr->GetFunctionName()];
+            return builder->CreateLoad(GetTypeFromDataType(builder, funcDef->GetReturnType()), m_Variables[variableName]);
         } else {
             COMPILER_ERROR("Unsupported expressions for variable values found: {0}", variableExpr->GetClassName());
             exit(1);
