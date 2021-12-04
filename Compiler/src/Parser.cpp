@@ -1,7 +1,7 @@
 #include "Parser.h"
 #include "Expressions.h"
+#include "./utils/logger.h"
 #include "./utils/strings.h"
-
 
 namespace Hunter::Compiler {
     void AbstractSyntaxTree::Dump() {
@@ -170,6 +170,10 @@ namespace Hunter::Compiler {
                     ParseResult result = ParseFunctionReturn(i, endPosition, input);
                     i = result.Pos+1;
                     expr = result.Expr;
+                }  else if (str == "extern") {
+                    ParseResult result = ParseExtern(i, endPosition, input);
+                    i = result.Pos+1;
+                    expr = result.Expr;
                 } else {
 
                     ParseResult result = ParseIdentifier(-1, str.length(), str);
@@ -217,6 +221,20 @@ namespace Hunter::Compiler {
         std::cout << "Level: " << level << std::endl;
 
         return expr;
+    }
+
+    ParseResult Parser::ParseExtern(int currentPos, int endPosition, const std::string &input) {
+        ParseResult result = ParseFunctionHeader(currentPos, endPosition, input);
+
+        if (!result.Expr) {
+            COMPILER_ERROR("Could not parse function definition for external");
+            exit(1);
+        }
+
+        return {
+            .Pos = result.Pos,
+            .Expr = new ExternExpression(result.Expr)
+        };
     }
 
     ParseResult Parser::ParseImport(int currentPos, int endPosition, const std::string &input) {

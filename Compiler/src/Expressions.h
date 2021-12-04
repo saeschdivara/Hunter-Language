@@ -134,6 +134,21 @@ namespace Hunter::Compiler {
         Expression * m_Data;
     };
 
+    class ExternExpression : public Expression {
+    public:
+        ExternExpression(Expression * expr) : m_Data(expr) {}
+        Expression * GetData() { return m_Data; }
+
+        void Dump(int level) override {
+            DumpSpaces(level);
+            std::cout << "Extern Expression: " << std::endl;
+            GetData()->Dump(level+1);
+        }
+
+    private:
+        Expression * m_Data;
+    };
+
     class StringExpression : public Expression {
     public:
         StringExpression(std::string str) : m_Data(std::move(str)) {}
