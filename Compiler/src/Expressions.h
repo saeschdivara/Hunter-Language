@@ -56,6 +56,7 @@ namespace Hunter::Compiler {
     class Expression {
     public:
         virtual ~Expression() = default;
+        virtual const char* GetClassName() = 0;
         virtual void Dump(int level = 0) = 0;
         virtual bool HasBlock() { return false; }
 
@@ -70,6 +71,10 @@ namespace Hunter::Compiler {
     class ImportExpression : public Expression {
     public:
         ImportExpression(std::string module) : m_Module(std::move(module)) {}
+
+        const char *GetClassName() override {
+            return "ImportExpression";
+        }
 
         const std::string &GetModule() const {
             return m_Module;
@@ -87,6 +92,10 @@ namespace Hunter::Compiler {
     class ModuleExpression : public Expression {
     public:
         ModuleExpression(std::string module) : m_Module(std::move(module)) {}
+
+        const char *GetClassName() override {
+            return "ModuleExpression";
+        }
 
         const std::string &GetModule() const {
             return m_Module;
@@ -124,6 +133,10 @@ namespace Hunter::Compiler {
         PrintExpression(Expression * expr) : m_Data(expr) {}
         Expression * GetInput() { return m_Data; }
 
+        const char *GetClassName() override {
+            return "PrintExpression";
+        }
+
         void Dump(int level) override {
             DumpSpaces(level);
             std::cout << "Print Expression: " << std::endl;
@@ -138,6 +151,10 @@ namespace Hunter::Compiler {
     public:
         ExternExpression(Expression * expr) : m_Data(expr) {}
         Expression * GetData() { return m_Data; }
+
+        const char *GetClassName() override {
+            return "ExternExpression";
+        }
 
         void Dump(int level) override {
             DumpSpaces(level);
@@ -154,6 +171,10 @@ namespace Hunter::Compiler {
         StringExpression(std::string str) : m_Data(std::move(str)) {}
         std::string & GetString() { return m_Data; }
 
+        const char *GetClassName() override {
+            return "StringExpression";
+        }
+
         void Dump(int level) override {
             DumpSpaces(level);
             std::cout << "String Expression: " << GetString() << std::endl;
@@ -168,6 +189,10 @@ namespace Hunter::Compiler {
         ConstExpression(std::string name, Expression * value) : m_VariableName(std::move(name)), m_Value(value) {}
         std::string & GetVariableName() { return m_VariableName; }
         Expression * GetValue() { return m_Value; }
+
+        const char *GetClassName() override {
+            return "ConstExpression";
+        }
 
         void Dump(int level) override {
             DumpSpaces(level);
@@ -186,6 +211,10 @@ namespace Hunter::Compiler {
         std::string & GetVariableName() { return m_VariableName; }
         Expression * GetValue() { return m_Value; }
 
+        const char *GetClassName() override {
+            return "LetExpression";
+        }
+
         void Dump(int level) override {
             DumpSpaces(level);
             std::cout << "Let Expression: " << GetVariableName() << " := " << std::endl;
@@ -202,6 +231,10 @@ namespace Hunter::Compiler {
         VariableMutationExpression(std::string name, Expression * value) : m_VariableName(std::move(name)), m_Value(value) {}
         std::string & GetVariableName() { return m_VariableName; }
         Expression * GetValue() { return m_Value; }
+
+        const char *GetClassName() override {
+            return "VariableMutationExpression";
+        }
 
         void Dump(int level) override {
             DumpSpaces(level);
@@ -222,6 +255,10 @@ namespace Hunter::Compiler {
         OperatorType GetOperator() { return m_Operator; }
         Expression * Left() { return m_Left; }
         Expression * Right() { return m_Right; }
+
+        const char *GetClassName() override {
+            return "BooleanExpression";
+        }
 
         void Dump(int level) override {
             DumpSpaces(level);
@@ -264,6 +301,10 @@ namespace Hunter::Compiler {
             m_Right = right;
         }
 
+        const char *GetClassName() override {
+            return "OperationExpression";
+        }
+
         void Dump(int level) override {
             DumpSpaces(level);
             std::cout << "Operation Expression: " << std::endl;
@@ -295,6 +336,10 @@ namespace Hunter::Compiler {
         IntType GetType() const { return m_Type; }
         int64_t GetValue() const { return m_Value; }
 
+        const char *GetClassName() override {
+            return "IntExpression";
+        }
+
         void Dump(int level) override {
             DumpSpaces(level);
             std::cout << "Int Expression: " << GetValue() << " (" << static_cast<int>(GetType()) << ")" << std::endl;
@@ -310,6 +355,10 @@ namespace Hunter::Compiler {
         IdentifierExpression(std::string name) : m_VariableName(std::move(name)) {}
         std::string & GetVariableName() { return m_VariableName; }
 
+        const char *GetClassName() override {
+            return "IdentifierExpression";
+        }
+
         void Dump(int level) override {
             DumpSpaces(level);
             std::cout << "Identifier Expression: " << GetVariableName() << std::endl;
@@ -323,6 +372,10 @@ namespace Hunter::Compiler {
     public:
         FunctionReturnExpression(Expression * expr) : m_ReturnExpr(expr) {}
         Expression * GetValue() { return m_ReturnExpr; }
+
+        const char *GetClassName() override {
+            return "FunctionReturnExpression";
+        }
 
         void Dump(int level) override {
             DumpSpaces(level);
@@ -347,6 +400,10 @@ namespace Hunter::Compiler {
             return m_FunctionName;
         }
 
+        const char *GetClassName() override {
+            return "FunctionCallExpression";
+        }
+
         void Dump(int level) override {
             DumpSpaces(level);
             std::cout << "Function call Expression: " << GetFunctionName() << std::endl;
@@ -369,6 +426,10 @@ namespace Hunter::Compiler {
 
         DataType GetDataType() const {
             return m_DataType;
+        }
+
+        const char *GetClassName() override {
+            return "ParameterExpression";
         }
 
         void Dump(int level) override {
@@ -401,6 +462,10 @@ namespace Hunter::Compiler {
             m_ReturnType = returnType;
         }
 
+        const char *GetClassName() override {
+            return "FunctionExpression";
+        }
+
         void Dump(int level) override {
             DumpSpaces(level);
             std::cout << "Function Expression: " << GetName() << " : " << GetDataTypeString(GetReturnType()) << std::endl;
@@ -430,6 +495,10 @@ namespace Hunter::Compiler {
         int64_t GetStart() const { return m_Start; }
         int64_t GetEnd() const { return m_End; }
 
+        const char *GetClassName() override {
+            return "RangeExpression";
+        }
+
         void Dump(int level) override {
             DumpSpaces(level);
             std::cout << "Range Expression: " << GetStart() << " - " << GetEnd() << std::endl;
@@ -442,6 +511,10 @@ namespace Hunter::Compiler {
 
     class ElseExpression : public BlockExpression {
     public:
+        const char *GetClassName() override {
+            return "ElseExpression";
+        }
+
         void Dump(int level) override {
             DumpSpaces(level+1);
             std::cout << "Else Expression: " << std::endl;
@@ -458,6 +531,10 @@ namespace Hunter::Compiler {
     public:
         IfExpression(Expression * condition) : m_Condition(condition) {}
         Expression * GetCondition() { return m_Condition; }
+
+        const char *GetClassName() override {
+            return "IfExpression";
+        }
 
         void Dump(int level) override {
             DumpSpaces(level+1);
@@ -496,6 +573,10 @@ namespace Hunter::Compiler {
         WhileExpression(Expression * condition) : m_Condition(condition) {}
         Expression * GetCondition() { return m_Condition; }
 
+        const char *GetClassName() override {
+            return "WhileExpression";
+        }
+
         void Dump(int level) override {
             DumpSpaces(level+1);
             std::cout << "While Expression: " << std::endl;
@@ -518,7 +599,11 @@ namespace Hunter::Compiler {
     class ForLoopExpression : public BlockExpression {
     public:
         ForLoopExpression(std::string counterIdentifier, Expression * range)
-            : m_CounterIdentifier(std::move(counterIdentifier)), m_Range(range) {};
+            : m_CounterIdentifier(std::move(counterIdentifier)), m_Range(range) {}
+
+        const char *GetClassName() override {
+            return "ForLoopExpression";
+        }
 
         void Dump(int level) override {
             DumpSpaces(level+1);

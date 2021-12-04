@@ -156,7 +156,7 @@ namespace Hunter::Compiler {
         } else if (auto *moduleExpr = dynamic_cast<ModuleExpression *>(expr)) {
             // maybe this will not be here anymore
         } else {
-            std::cerr << "Unhandled expression found" << std::endl;
+            COMPILER_ERROR("Unhandled expression found: {0}", expr->GetClassName());
             exit(1);
         }
     }
