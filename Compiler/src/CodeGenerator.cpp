@@ -20,6 +20,8 @@ namespace Hunter::Compiler {
         switch (dataType) {
             case DataType::Void:
                 return builder->getVoidTy();
+            case DataType::Memory:
+                return llvm::PointerType::get(builder->getVoidTy(), 0);
             case DataType::String:
                 return builder->getInt8PtrTy();
             case DataType::i8:
@@ -37,6 +39,10 @@ namespace Hunter::Compiler {
         switch (dataType) {
             case DataType::Void: {
                 COMPILER_ERROR("Unknown data type has no format string");
+                exit(1);
+            }
+            case DataType::Memory: {
+                COMPILER_ERROR("Memory data type has not a format string yet");
                 exit(1);
             }
             case DataType::String:
@@ -153,7 +159,14 @@ namespace Hunter::Compiler {
             InsertFunctionCallExpression(builder, funcCallExpr);
         } else if (auto *retExpr = dynamic_cast<FunctionReturnExpression *>(expr)) {
             InsertFuncReturnExpression(builder, retExpr);
-        } else if (auto *moduleExpr = dynamic_cast<ModuleExpression *>(expr)) {
+        } else if (auto *externExpr = dynamic_cast<ExternExpression *>(expr)) {
+            if (auto * funcExpr = dynamic_cast<FunctionExpression *>(externExpr->GetData())) {
+                InsertFunctionExpression(builder, funcExpr);
+            } else {
+                COMPILER_ERROR("Unknown data type used for external declaration: {0}", externExpr->GetData()->GetClassName());
+                exit(1);
+            }
+        }  else if (auto *moduleExpr = dynamic_cast<ModuleExpression *>(expr)) {
             // maybe this will not be here anymore
         } else {
             COMPILER_ERROR("Unhandled expression found: {0}", expr->GetClassName());
@@ -206,8 +219,8 @@ namespace Hunter::Compiler {
             // Create a new basic block to start insertion into.
             llvm::BasicBlock::Create(m_Context, "entry", currentFunction);
 
-            m_Functions[funcExpr->GetName()] = currentFunction;
-            m_FunctionsDefinitions[funcExpr->GetName()] = funcExpr;
+            m_Functions[functionName] = currentFunction;
+            m_FunctionsDefinitions[functionName] = funcExpr;
         }
 
         llvm::IRBuilder<> funcBlockBuilder(&currentFunction->getEntryBlock(), currentFunction->getEntryBlock().begin());
@@ -240,9 +253,18 @@ namespace Hunter::Compiler {
             InsertExpression(&funcBlockBuilder, expr);
         }
 
-        // todo: reassign variables
+        for (const auto &parameter : funcExpr->GetParameters()) {
+            auto parameterName = parameter->GetName();
+            if (outerVariables.contains(parameterName)) {
+                m_Variables[parameterName] = outerVariables[parameterName];
+            } else {
+                m_Variables.erase(parameterName);
+            }
+        }
 
-        funcBlockBuilder.CreateRetVoid();
+//        if (!dynamic_cast<FunctionReturnExpression *>(*funcExpr->GetBody().end())) {
+            funcBlockBuilder.CreateRetVoid();
+//        }
 
         if (functionName == "hunt") {
             builder->CreateCall(currentFunction);
@@ -494,7 +516,7 @@ namespace Hunter::Compiler {
         Expression *value = constExpr->GetValue();
 
         if (m_Variables.contains(variableName)) {
-            std::cerr << "Variable " << variableName << " was already defined" << std::endl;
+            COMPILER_ERROR("Variable {0} was already defined", variableName);
             exit(1);
         }
 
@@ -510,6 +532,12 @@ namespace Hunter::Compiler {
             InsertIntExpression(builder, variableName, intExpr);
         } else if (auto *funcCallExpr = dynamic_cast<FunctionCallExpression *>(value)) {
             auto * func = m_FunctionsDefinitions[funcCallExpr->GetFunctionName()];
+
+            if (!func) {
+                COMPILER_ERROR("Could not find function definition for {0}", funcCallExpr->GetFunctionName());
+                exit(1);
+            }
+
             DataType returnType = func->GetReturnType();
             auto *var = builder->CreateAlloca(GetTypeFromDataType(builder, returnType), nullptr, variableName);
 
@@ -529,7 +557,7 @@ namespace Hunter::Compiler {
         Expression *value = letExpr->GetValue();
 
         if (m_Variables.contains(variableName)) {
-            std::cerr << "Variable " << variableName << " was already defined" << std::endl;
+            COMPILER_ERROR("Variable {0} was already defined", variableName);
             exit(1);
         }
 
@@ -611,8 +639,10 @@ namespace Hunter::Compiler {
         } else if (auto *intValExpr = dynamic_cast<IntExpression *>(variableExpr)) {
             IntType type = intValExpr->GetType();
             return builder->CreateLoad(GetVariableTypeForInt(builder, type), m_Variables[variableName]);
+        } else if (dynamic_cast<FunctionCallExpression *>(variableExpr)) {
+            return m_Variables[variableName];
         } else {
-            std::cerr << "Unsupported expressions for variable values found" << std::endl;
+            COMPILER_ERROR("Unsupported expressions for variable values found: {0}", variableExpr->GetClassName());
             exit(1);
         }
     }

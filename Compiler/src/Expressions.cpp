@@ -6,6 +6,9 @@ namespace Hunter::Compiler {
         if (typeStr == "string") {
             return DataType::String;
         }
+        else if (typeStr == "memory") {
+            return DataType::Memory;
+        }
         else if (typeStr == "i8") {
             return DataType::i8;
         }
@@ -35,8 +38,10 @@ namespace Hunter::Compiler {
                 return "i64";
             case DataType::String:
                 return "String";
+            case DataType::Memory:
+                return "Memory";
             case DataType::Void:
-                return "Unknown";
+                return "Void";
         }
     }
 

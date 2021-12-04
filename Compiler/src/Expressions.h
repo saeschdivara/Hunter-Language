@@ -17,6 +17,7 @@ namespace Hunter::Compiler {
     enum class DataType {
         Void = 0,
         String  = 1,
+        Memory  = 2,
         i8      = static_cast<int>(IntType::i8),
         i16     = static_cast<int>(IntType::i16),
         i32     = static_cast<int>(IntType::i32),
@@ -434,7 +435,7 @@ namespace Hunter::Compiler {
 
         void Dump(int level) override {
             DumpSpaces(level);
-            std::cout << "Parameter Expression: " << GetName() << " (" << static_cast<int>(GetDataType()) << ")" << std::endl;
+            std::cout << "Parameter Expression: " << GetName() << " (" << GetDataTypeString(GetDataType()) << ")" << std::endl;
         }
 
     private:

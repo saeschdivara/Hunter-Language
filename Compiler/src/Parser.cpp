@@ -224,6 +224,31 @@ namespace Hunter::Compiler {
     }
 
     ParseResult Parser::ParseExtern(int currentPos, int endPosition, const std::string &input) {
+        std::string str;
+
+        for (int i = currentPos; i < endPosition; ++i, ++currentPos) {
+            char c = input.at(i);
+
+            if (isspace(c)) {
+                if (str == "fun") {
+                    break;
+                }
+
+                str = "";
+                continue;
+            }
+
+            str.push_back(c);
+        }
+
+        for (int i = currentPos+1; i < endPosition; ++i, ++currentPos) {
+            char c = input.at(i);
+
+            if (!isspace(c)) {
+                break;
+            }
+        }
+
         ParseResult result = ParseFunctionHeader(currentPos, endPosition, input);
 
         if (!result.Expr) {
