@@ -11,4 +11,5 @@ We want to be able to write the compiler in our own language. So what do we need
 3. [ ] File interaction (read / write)
 4. [ ] String operations
 4. [x] Support of modules (simple version)
-5. [ ] C-Libraries integration / using functions from any arbitrary library (using c call convention)
+5. [x] C-Libraries integration / using functions from any arbitrary library (using c call convention)
+5. [ ] Debug information
