@@ -14,7 +14,11 @@ add_executable(Hunter_Compiler
         src/CodeGenerator.cpp src/CodeGenerator.h
         src/Compiler.cpp src/Compiler.h
         src/Expressions.cpp src/Expressions.h
-        src/ImportResolver.cpp src/ImportResolver.h src/utils/strings.h src/utils/strings.cpp src/utils/files.h src/utils/files.cpp src/utils/logger.h src/utils/logger.cpp)
+        src/ImportResolver.cpp src/ImportResolver.h
+        src/utils/strings.h src/utils/strings.cpp
+        src/utils/files.h src/utils/files.cpp
+        src/utils/logger.h src/utils/logger.cpp
+        src/DebugData.cpp src/DebugData.h)
 
 llvm_map_components_to_libnames(llvm_libraries analysis support core object target  irreader executionengine scalaropts instcombine orcjit runtimedyld)
 

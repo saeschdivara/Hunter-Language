@@ -39,7 +39,7 @@ namespace Hunter::Compiler {
 
     class Parser {
     public:
-        AbstractSyntaxTree * Parse(const std::string & input);
+        AbstractSyntaxTree * Parse(const std::string & filePath);
 
         void OnLineFinished(AbstractSyntaxTree * tree);
 
@@ -69,6 +69,11 @@ namespace Hunter::Compiler {
         bool m_IsParsingBlock = false;
         bool m_IsFullLineComment = false;
         int m_CurrentLevel = 0;
+
+        std::string m_CurrentDirectory;
+        std::string m_CurrentFileName;
+        int64_t m_CurrentLine;
+        int64_t m_CurrentColumn;
     };
 
 }

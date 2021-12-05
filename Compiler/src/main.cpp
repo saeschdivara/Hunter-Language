@@ -29,9 +29,7 @@ int main(int argc, const char ** argv) {
     // todo: handle 1 character variable
 
     std::string filePath = std::string(argv[1]);
-    std::string input = readFileIntoString(filePath);
-
-    Hunter::Compiler::AbstractSyntaxTree * ast = parser.Parse(input);
+    Hunter::Compiler::AbstractSyntaxTree * ast = parser.Parse(filePath);
     importResolver.ResolveImports(std::filesystem::path(filePath).parent_path(), ast);
 
     ast->Dump();

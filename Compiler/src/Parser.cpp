@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include "Expressions.h"
+#include "./utils/files.h"
 #include "./utils/logger.h"
 #include "./utils/strings.h"
 
@@ -14,12 +15,21 @@ namespace Hunter::Compiler {
         }
     }
 
-    AbstractSyntaxTree *Parser::Parse(const std::string &input) {
+    AbstractSyntaxTree *Parser::Parse(const std::string &filePath) {
+        auto path = std::filesystem::path(filePath);
+        std::string input = readFileIntoString(filePath);
+
+        m_CurrentFileName = path.filename();
+        m_CurrentDirectory = path.parent_path().string();
+        m_CurrentLine = 0;
+        m_CurrentColumn = 0;
+
         auto *tree = new AbstractSyntaxTree;
 
         for (char const &c: input) {
 
             if (c == '\n') {
+                m_CurrentLine += 1;
                 std::cout << m_DataStr << std::endl;
 
                 if (m_DataStr.empty()) {
@@ -35,6 +45,7 @@ namespace Hunter::Compiler {
         }
 
         if (!m_DataStr.empty()) {
+            m_CurrentLine += 1;
             OnLineFinished(tree);
         }
 
@@ -103,6 +114,7 @@ namespace Hunter::Compiler {
         }
 
         for (int i = 0; i < endPosition; ++i) {
+            m_CurrentColumn = i+1;
             char c = input.at(i);
 
             if (isspace(c) && isLevelParsing) {
@@ -198,6 +210,14 @@ namespace Hunter::Compiler {
                     std::cerr << "Parsing produced invalid expression" << std::endl;
                     exit(1);
                 }
+
+                auto * debugData = new Hunter::Parser::Debug::DebugData;
+                debugData->SetDirectory(m_CurrentDirectory);
+                debugData->SetFileName(m_CurrentFileName);
+                debugData->SetFileLine(m_CurrentLine);
+                debugData->SetFileColumn(m_CurrentColumn);
+
+                expr->SetDebugData(debugData);
 
                 str = "";
                 continue;

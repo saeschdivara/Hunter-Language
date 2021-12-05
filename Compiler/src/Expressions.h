@@ -5,6 +5,8 @@
 #include <vector>
 #include <iostream>
 
+#include "DebugData.h"
+
 namespace Hunter::Compiler {
 
     enum class IntType {
@@ -61,12 +63,17 @@ namespace Hunter::Compiler {
         virtual void Dump(int level = 0) = 0;
         virtual bool HasBlock() { return false; }
 
+        void SetDebugData(Hunter::Parser::Debug::DebugData * data) { m_DebugData = data; }
+        Hunter::Parser::Debug::DebugData * GetDebugData() const { return m_DebugData; }
+
     protected:
         void DumpSpaces(int level = 0) {
             for (int i = 0; i < level; ++i) {
                 std::cout << "  ";
             }
         }
+
+        Hunter::Parser::Debug::DebugData * m_DebugData;
     };
 
     class ImportExpression : public Expression {

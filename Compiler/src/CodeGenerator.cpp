@@ -9,6 +9,7 @@
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/DIBuilder.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <llvm/Object/IRObjectFile.h>
@@ -111,6 +112,20 @@ namespace Hunter::Compiler {
         auto *builder = new llvm::IRBuilder<>(entryBlock);
 
         for (const auto &instr : ast->GetInstructions()) {
+            if (!m_DebugInfoBuilder) {
+                m_DebugInfoBuilder = new llvm::DIBuilder(*m_Module);
+                auto * debugData = instr->GetDebugData();
+
+                m_DebugInfoBuilder->createCompileUnit(
+                        llvm::dwarf::DW_LANG_C,
+                        m_DebugInfoBuilder->createFile(debugData->GetFileName(), debugData->GetDirectory()),
+                        "Hunter Compiler",
+                        0,
+                        "",
+                        0
+                );
+            }
+
             if (auto *funcExpr = dynamic_cast<FunctionExpression *>(instr)) {
                 InsertFunctionExpression(builder, funcExpr);
             } else {
@@ -119,6 +134,8 @@ namespace Hunter::Compiler {
         }
 
         builder->CreateRet(llvm::ConstantInt::get(m_Context, llvm::APInt(32, 0)));
+
+        m_DebugInfoBuilder->finalize();
 
         std::error_code err;
         llvm::raw_ostream *ostream = new llvm::raw_fd_ostream("output.bc", err);
