@@ -5,6 +5,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "DebugGenerator.h"
+
 namespace llvm {
     class BasicBlock;
     class Module;
@@ -60,11 +62,11 @@ namespace Hunter::Compiler {
     private:
         std::string m_DebugOutputFileName;
 
+        Debug::DebugGenerator * m_DebugGenerator = nullptr;
+
         // make sure it lives as long as the module is used
         llvm::Module * m_Module;
         llvm::LLVMContext m_Context;
-
-        llvm::DIBuilder * m_DebugInfoBuilder = nullptr;
 
         std::unordered_map<std::string, llvm::Function *> m_Functions;
         std::unordered_map<std::string, FunctionExpression *> m_FunctionsDefinitions;

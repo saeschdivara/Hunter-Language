@@ -112,18 +112,10 @@ namespace Hunter::Compiler {
         auto *builder = new llvm::IRBuilder<>(entryBlock);
 
         for (const auto &instr : ast->GetInstructions()) {
-            if (!m_DebugInfoBuilder) {
-                m_DebugInfoBuilder = new llvm::DIBuilder(*m_Module);
+            if (!m_DebugGenerator) {
+                m_DebugGenerator = new Debug::DebugGenerator(m_Module);
                 auto * debugData = instr->GetDebugData();
-
-                m_DebugInfoBuilder->createCompileUnit(
-                        llvm::dwarf::DW_LANG_C,
-                        m_DebugInfoBuilder->createFile(debugData->GetFileName(), debugData->GetDirectory()),
-                        "Hunter Compiler",
-                        0,
-                        "",
-                        0
-                );
+                m_DebugGenerator->CreateCompileUnit(debugData);
             }
 
             if (auto *funcExpr = dynamic_cast<FunctionExpression *>(instr)) {
@@ -135,7 +127,9 @@ namespace Hunter::Compiler {
 
         builder->CreateRet(llvm::ConstantInt::get(m_Context, llvm::APInt(32, 0)));
 
-        m_DebugInfoBuilder->finalize();
+        if (m_DebugGenerator) {
+            m_DebugGenerator->Generate();
+        }
 
         std::error_code err;
         llvm::raw_ostream *ostream = new llvm::raw_fd_ostream("output.bc", err);
@@ -236,6 +230,8 @@ namespace Hunter::Compiler {
             m_Functions[functionName] = currentFunction;
             m_FunctionsDefinitions[functionName] = funcExpr;
 
+            m_DebugGenerator->DefineFunction(currentFunction, funcExpr);
+
             if (funcExpr->IsExternal()) {
                 return;
             }
@@ -290,6 +286,8 @@ namespace Hunter::Compiler {
         if (functionName == "hunt") {
             builder->CreateCall(currentFunction);
         }
+
+        m_DebugGenerator->PopLocation();
     }
 
     void CodeGenerator::InsertIfExpression(llvm::IRBuilder<> *builder, IfExpression *ifExpr) {
@@ -409,6 +407,8 @@ namespace Hunter::Compiler {
         if (auto *funcCallExpr = dynamic_cast<FunctionCallExpression *>(printExpr->GetInput())) {
             std::string formatString;
             std::vector<llvm::Value *> ops;
+
+            m_DebugGenerator->EmitLocation(builder, printExpr);
 
             for (const auto &parameter : funcCallExpr->GetParameters()) {
 
