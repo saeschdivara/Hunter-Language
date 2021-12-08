@@ -1,4 +1,5 @@
 #include "Expressions.h"
+#include "./utils/logger.h"
 
 namespace Hunter::Compiler {
 
@@ -174,6 +175,19 @@ namespace Hunter::Compiler {
                 return "&";
             case OperatorType::BitXor:
                 return "<not implemented yet>";
+        }
+    }
+
+    DataType VariableDeclarationExpression::GetVariableType() {
+        auto * value = GetValue();
+
+        if (dynamic_cast<StringExpression *>(value)) {
+            return DataType::String;
+        } else if (auto *intExpr = dynamic_cast<IntExpression *>(value)) {
+            return static_cast<DataType>(GetTypeFromValue(intExpr->GetValue()));
+        } else {
+            COMPILER_ERROR("Not supported variable value type: {0}", value->GetClassName());
+            exit(1);
         }
     }
 }

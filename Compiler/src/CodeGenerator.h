@@ -49,7 +49,7 @@ namespace Hunter::Compiler {
         void InsertLetExpression(llvm::IRBuilder<> *builder, LetExpression *letExpr);
         void InsertVarMutationExpression(llvm::IRBuilder<> *builder, VariableMutationExpression *varMutExpr);
         void InsertFuncReturnExpression(llvm::IRBuilder<> *builder, FunctionReturnExpression * retExpr);
-        void InsertIntExpression(llvm::IRBuilder<> *builder, const std::string & variableName, IntExpression *intExpr);
+        llvm::AllocaInst * InsertIntExpression(llvm::IRBuilder<> *builder, const std::string & variableName, IntExpression *intExpr);
 
         llvm::Value * GetValueFromExpression(llvm::IRBuilder<> *builder, Expression * expr);
         llvm::Value * GetVariableValue(llvm::IRBuilder<> *builder, const std::string & variableName);

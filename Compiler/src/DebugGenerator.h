@@ -22,6 +22,7 @@ namespace Hunter::Compiler::Debug {
 
         void CreateCompileUnit(Hunter::Parser::Debug::DebugData * data);
         void DefineFunction(llvm::Function * func, FunctionExpression * expr);
+        void DefineVariable(llvm::IRBuilder<> *builder, llvm::AllocaInst * alloc, Expression * expr);
         void EmitLocation(llvm::IRBuilder<> *builder, Expression * expr);
         void PushLocation(llvm::DIScope * scope);
         void PopLocation();

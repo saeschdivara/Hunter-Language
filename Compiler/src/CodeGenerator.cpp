@@ -490,6 +490,7 @@ namespace Hunter::Compiler {
     }
 
     llvm::Value * CodeGenerator::InsertFunctionCallExpression(llvm::IRBuilder<> *builder, FunctionCallExpression *funcCallExpr) {
+        m_DebugGenerator->EmitLocation(builder, funcCallExpr);
         std::vector<llvm::Value *> ops;
 
         for (const auto &parameter : funcCallExpr->GetParameters()) {
@@ -533,6 +534,8 @@ namespace Hunter::Compiler {
     }
 
     void CodeGenerator::InsertConstExpression(llvm::IRBuilder<> *builder, ConstExpression *constExpr) {
+        m_DebugGenerator->EmitLocation(builder, constExpr);
+
         std::string variableName = constExpr->GetVariableName();
         Expression *value = constExpr->GetValue();
 
@@ -544,13 +547,15 @@ namespace Hunter::Compiler {
         if (auto *strExpr = dynamic_cast<StringExpression *>(value)) {
             llvm::GlobalVariable *strData = builder->CreateGlobalString(llvm::StringRef(strExpr->GetString()));
             auto *var = builder->CreateAlloca(builder->getInt8PtrTy(), nullptr, variableName);
+            m_DebugGenerator->DefineVariable(builder, var, constExpr);
 
             m_Variables[variableName] = var;
             m_VariablesExpression[variableName] = value;
 
             builder->CreateStore(strData, var);
         } else if (auto *intExpr = dynamic_cast<IntExpression *>(value)) {
-            InsertIntExpression(builder, variableName, intExpr);
+           auto * var = InsertIntExpression(builder, variableName, intExpr);
+           m_DebugGenerator->DefineVariable(builder, var, constExpr);
         } else if (auto *funcCallExpr = dynamic_cast<FunctionCallExpression *>(value)) {
             auto * func = m_FunctionsDefinitions[funcCallExpr->GetFunctionName()];
 
@@ -561,6 +566,7 @@ namespace Hunter::Compiler {
 
             DataType returnType = func->GetReturnType();
             auto *var = builder->CreateAlloca(GetTypeFromDataType(builder, returnType), nullptr, variableName);
+            m_DebugGenerator->DefineVariable(builder, var, constExpr);
 
             m_Variables[variableName] = var;
             m_VariablesExpression[variableName] = value;
@@ -574,6 +580,8 @@ namespace Hunter::Compiler {
     }
 
     void CodeGenerator::InsertLetExpression(llvm::IRBuilder<> *builder, LetExpression *letExpr) {
+        m_DebugGenerator->EmitLocation(builder, letExpr);
+
         std::string variableName = letExpr->GetVariableName();
         Expression *value = letExpr->GetValue();
 
@@ -585,13 +593,18 @@ namespace Hunter::Compiler {
         if (auto *strExpr = dynamic_cast<StringExpression *>(value)) {
             llvm::GlobalVariable *strData = builder->CreateGlobalString(llvm::StringRef(strExpr->GetString()));
             auto *var = builder->CreateAlloca(builder->getInt8PtrTy(), nullptr, variableName);
+            m_DebugGenerator->DefineVariable(builder, var, letExpr);
 
             m_Variables[variableName] = var;
             m_VariablesExpression[variableName] = value;
 
             builder->CreateStore(strData, var);
         } else if (auto *intExpr = dynamic_cast<IntExpression *>(value)) {
-            InsertIntExpression(builder, variableName, intExpr);
+            auto * var = InsertIntExpression(builder, variableName, intExpr);
+            m_DebugGenerator->DefineVariable(builder, var, letExpr);
+        } else {
+            COMPILER_ERROR("Unknown variable data type: {0}", letExpr->GetClassName());
+            exit(1);
         }
     }
 
@@ -622,13 +635,15 @@ namespace Hunter::Compiler {
         builder->CreateRet(GetValueFromExpression(builder, retExpr->GetValue()));
     }
 
-    void CodeGenerator::InsertIntExpression(llvm::IRBuilder<> *builder, const std::string &variableName,
+    llvm::AllocaInst * CodeGenerator::InsertIntExpression(llvm::IRBuilder<> *builder, const std::string &variableName,
                                             IntExpression *intExpr) {
         auto *var = builder->CreateAlloca(GetVariableTypeForInt(builder, intExpr->GetType()), nullptr, variableName);
         m_Variables[variableName] = var;
         m_VariablesExpression[variableName] = intExpr;
 
         builder->CreateStore(GetIntValue(builder, intExpr), var);
+
+        return var;
     }
 
     llvm::Value *CodeGenerator::GetValueFromExpression(llvm::IRBuilder<> *builder, Expression *expr) {

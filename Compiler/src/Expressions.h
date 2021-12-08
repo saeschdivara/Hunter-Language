@@ -192,11 +192,22 @@ namespace Hunter::Compiler {
         std::string m_Data;
     };
 
-    class ConstExpression : public Expression {
+    class VariableDeclarationExpression : public Expression {
     public:
-        ConstExpression(std::string name, Expression * value) : m_VariableName(std::move(name)), m_Value(value) {}
+        VariableDeclarationExpression(std::string name, Expression * value) : m_VariableName(std::move(name)), m_Value(value) {}
         std::string & GetVariableName() { return m_VariableName; }
         Expression * GetValue() { return m_Value; }
+
+        DataType GetVariableType();
+
+    private:
+        std::string m_VariableName;
+        Expression * m_Value;
+    };
+
+    class ConstExpression : public VariableDeclarationExpression {
+    public:
+        ConstExpression(std::string name, Expression * value) : VariableDeclarationExpression(std::move(name), value) {}
 
         const char *GetClassName() override {
             return "ConstExpression";
@@ -207,17 +218,11 @@ namespace Hunter::Compiler {
             std::cout << "Const Expression: " << GetVariableName() << " := " << std::endl;
             GetValue()->Dump(level+1);
         }
-
-    private:
-        std::string m_VariableName;
-        Expression * m_Value;
     };
 
-    class LetExpression : public Expression {
+    class LetExpression : public VariableDeclarationExpression {
     public:
-        LetExpression(std::string name, Expression * value) : m_VariableName(std::move(name)), m_Value(value) {}
-        std::string & GetVariableName() { return m_VariableName; }
-        Expression * GetValue() { return m_Value; }
+        LetExpression(std::string name, Expression * value) : VariableDeclarationExpression(std::move(name), value) {}
 
         const char *GetClassName() override {
             return "LetExpression";
@@ -228,10 +233,6 @@ namespace Hunter::Compiler {
             std::cout << "Let Expression: " << GetVariableName() << " := " << std::endl;
             GetValue()->Dump(level+1);
         }
-
-    private:
-        std::string m_VariableName;
-        Expression * m_Value;
     };
 
     class VariableMutationExpression : public Expression {
