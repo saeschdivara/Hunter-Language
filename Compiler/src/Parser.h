@@ -50,6 +50,7 @@ namespace Hunter::Compiler {
         ParseResult ParseExpression(int currentPos, int endPosition, const std::string & input);
         ParseResult ParseFullExpression(int currentPos, int endPosition, const std::string & input);
         ParseResult ParseString(int currentPos, int endPosition, const std::string & input);
+        ParseResult ParseStruct(int currentPos, int endPosition, const std::string & input);
         ParseResult ParseFunctionHeader(int currentPos, int endPosition, const std::string & input);
         ParseResult ParseFunctionReturn(int currentPos, int endPosition, const std::string & input);
         ParseResult ParseIf(int currentPos, int endPosition, const std::string & input);

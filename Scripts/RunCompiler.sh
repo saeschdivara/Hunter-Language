@@ -1,0 +1,1 @@
+./cmake-build-debug/bin/Hunter_Compiler Hunter-Compiler/compiler.hunt

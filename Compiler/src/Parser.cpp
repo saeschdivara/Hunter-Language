@@ -57,7 +57,7 @@ namespace Hunter::Compiler {
         m_CurrentExpression = ParseLine(m_DataStr);
 
         if (!m_CurrentExpression && !m_IsFullLineComment) {
-            std::cerr << "Could not parse valid expression from current line" << std::endl;
+            COMPILER_ERROR("Could not parse valid expression from current line");
             exit(1);
         }
         else if (!m_CurrentExpression && m_IsFullLineComment) {
@@ -137,7 +137,7 @@ namespace Hunter::Compiler {
 
             }
 
-            if (isspace(c) || c == '(') {
+            if (isspace(c) || c == '(' || c == ':') {
                 std::cout << "Word 1: " << str << std::endl;
 
                 if (str == "import") {
@@ -186,6 +186,10 @@ namespace Hunter::Compiler {
                     ParseResult result = ParseExtern(i, endPosition, input);
                     i = result.Pos+1;
                     expr = result.Expr;
+                }  else if (str == "struct") {
+                    ParseResult result = ParseStruct(i, endPosition, input);
+                    i = result.Pos+1;
+                    expr = result.Expr;
                 } else {
 
                     ParseResult result = ParseIdentifier(-1, str.length(), str);
@@ -193,6 +197,13 @@ namespace Hunter::Compiler {
                         if (c == '(') {
                             result = ParseFunctionCall(i, endPosition, input);
                             dynamic_cast<FunctionCallExpression *>(result.Expr)->SetFunctionName(str);
+                        } else if (c == ':') {
+                            result.Expr = new PropertyDeclarationExpression(
+                                    str,
+                                    GetDataTypeFromString(input.substr(i+1, input.size()))
+                            );
+
+                            result.Pos = input.size();
                         } else {
                             result = ParseVariableDeclaration(i-str.length()-1, endPosition, input, VariableHandlingType::Assign);
                         }
@@ -426,7 +437,7 @@ namespace Hunter::Compiler {
             if (operatorType != OperatorType::NoOperator) {
                 expr = new OperationExpression(operatorType);
             } else {
-                std::cerr << "Could not parse valid expression from " << input << std::endl;
+                COMPILER_ERROR("Could not parse valid expression from {0}", input);
                 exit(1);
             }
 
@@ -555,6 +566,22 @@ namespace Hunter::Compiler {
         return {
             .Pos = currentPos,
             .Expr = new StringExpression(str),
+        };
+    }
+
+    ParseResult Parser::ParseStruct(int currentPos, int endPosition, const std::string &input) {
+        ParseResult result = ParseIdentifier(currentPos, endPosition, input);
+
+        if (!result.Expr) {
+            COMPILER_ERROR("Could not parse struct identifier");
+            exit(1);
+        }
+
+        std::string structName = dynamic_cast<IdentifierExpression *>(result.Expr)->GetVariableName();
+
+        return {
+            .Pos = result.Pos,
+            .Expr = new StructExpression(structName)
         };
     }
 

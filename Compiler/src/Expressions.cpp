@@ -179,6 +179,11 @@ namespace Hunter::Compiler {
     }
 
     DataType VariableDeclarationExpression::GetVariableType() {
+
+        if (m_Type != DataType::Unknown) {
+            return m_Type;
+        }
+
         auto * value = GetValue();
 
         if (dynamic_cast<StringExpression *>(value)) {

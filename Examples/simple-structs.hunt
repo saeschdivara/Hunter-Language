@@ -1,0 +1,17 @@
+struct SampleData
+  # data comes here
+  my_int: i8
+  my_string: string
+
+struct SampleData2
+  # data comes here
+  my_int: i16
+  my_string: string
+
+fun hunt()
+  const data1 = SampleData(my_int = 9, my_string = "Hello")
+  const data2 = SampleData2(my_int = 9, my_string = "Hello")
+  print("Data 1 Int: ", data1.my_int, "\n")
+  print("Data 1 String: ", data1.my_string, "\n")
+  print("Data 2 Int: ", data2.my_int, "\n")
+  print("Data 2 String: ", data2.my_string, "\n")

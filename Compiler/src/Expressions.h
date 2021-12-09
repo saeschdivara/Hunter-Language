@@ -20,10 +20,13 @@ namespace Hunter::Compiler {
         Void = 0,
         String  = 1,
         Memory  = 2,
+        Struct  = 3,
         i8      = static_cast<int>(IntType::i8),
         i16     = static_cast<int>(IntType::i16),
         i32     = static_cast<int>(IntType::i32),
         i64     = static_cast<int>(IntType::i64),
+
+        Unknown = 999,
     };
 
     DataType GetDataTypeFromString(const std::string & typeStr);
@@ -195,6 +198,8 @@ namespace Hunter::Compiler {
     class VariableDeclarationExpression : public Expression {
     public:
         VariableDeclarationExpression(std::string name, Expression * value) : m_VariableName(std::move(name)), m_Value(value) {}
+        VariableDeclarationExpression(std::string name, DataType type) :
+            m_VariableName(std::move(name)), m_Type(type), m_Value(nullptr) {}
         std::string & GetVariableName() { return m_VariableName; }
         Expression * GetValue() { return m_Value; }
 
@@ -203,6 +208,24 @@ namespace Hunter::Compiler {
     private:
         std::string m_VariableName;
         Expression * m_Value;
+        DataType m_Type;
+    };
+
+    class PropertyDeclarationExpression : public VariableDeclarationExpression {
+    public:
+        PropertyDeclarationExpression(std::string name, DataType type) : VariableDeclarationExpression(std::move(name), type) {}
+
+        const char *GetClassName() override {
+            return "PropertyDeclarationExpression";
+        }
+
+        void Dump(int level) override {
+            DumpSpaces(level);
+            std::cout << "Property Declaration Expression: "
+                << GetVariableName()
+                << " := "
+                << GetDataTypeString(GetVariableType()) << std::endl;
+        }
     };
 
     class ConstExpression : public VariableDeclarationExpression {
@@ -375,6 +398,24 @@ namespace Hunter::Compiler {
 
     private:
         std::string m_VariableName;
+    };
+
+    class StructExpression : public BlockExpression {
+    public:
+        StructExpression(std::string name) : m_StructName(std::move(name)) {}
+        std::string & GetStructName() { return m_StructName; }
+
+        const char *GetClassName() override {
+            return "StructExpression";
+        }
+
+        void Dump(int level) override {
+            DumpSpaces(level);
+            std::cout << "Struct Expression: " << GetStructName() << std::endl;
+        }
+
+    private:
+        std::string m_StructName;
     };
 
     class FunctionReturnExpression : public Expression {
