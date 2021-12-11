@@ -1052,7 +1052,7 @@ namespace Hunter::Compiler {
                     }
 
                     if (!result.Expr) {
-                        std::cerr << "Could not parse expression: " << str << std::endl;
+                        COMPILER_ERROR("Could not parse expression: {0}", str);
                         exit(1);
                     }
 
@@ -1149,7 +1149,7 @@ namespace Hunter::Compiler {
         for (int i = currentPos+1; i < endPosition; ++i, currentPos++) {
             char c = input.at(i);
 
-            if (!isalnum(c) && c != '_') {
+            if (!isalnum(c) && c != '_' && c != '.') {
                 break;
             }
 
