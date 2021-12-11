@@ -1,4 +1,4 @@
-extern fun fopen(file_name: string, mode: string) :
+extern fun fopen(file_name: string, mode: string) : memory
 
 fun hunt()
   print("hello from the new compiler")

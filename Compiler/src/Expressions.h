@@ -412,10 +412,41 @@ namespace Hunter::Compiler {
         void Dump(int level) override {
             DumpSpaces(level);
             std::cout << "Struct Expression: " << GetStructName() << std::endl;
+
+            std::cout << "Properties: " << std::endl;
+            for (const auto &property : GetBody()) {
+                property->Dump(level+1);
+            }
         }
 
     private:
         std::string m_StructName;
+    };
+
+    class StructConstructionExpression : public Expression {
+    public:
+        StructConstructionExpression(std::string name, std::vector<VariableMutationExpression *>  attributes)
+            : m_StructName(std::move(name)), m_StructAttributes(std::move(attributes)) {}
+
+        std::string & GetStructName() { return m_StructName; }
+        std::vector<VariableMutationExpression *> & GetAttributes() { return m_StructAttributes; }
+
+        const char *GetClassName() override {
+            return "StructConstructionExpression";
+        }
+
+        void Dump(int level) override {
+            DumpSpaces(level);
+            std::cout << "Struct Construct Expression: " << GetStructName() << std::endl;
+
+            for (const auto &attribute : m_StructAttributes) {
+                attribute->Dump(level+1);
+            }
+        }
+
+    private:
+        std::string m_StructName;
+        std::vector<VariableMutationExpression *> m_StructAttributes;
     };
 
     class FunctionReturnExpression : public Expression {

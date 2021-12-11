@@ -198,9 +198,11 @@ namespace Hunter::Compiler {
                             result = ParseFunctionCall(i, endPosition, input);
                             dynamic_cast<FunctionCallExpression *>(result.Expr)->SetFunctionName(str);
                         } else if (c == ':') {
+                            std::string typeStr = input.substr(i+1, input.size());
+                            trim(typeStr);
                             result.Expr = new PropertyDeclarationExpression(
                                     str,
-                                    GetDataTypeFromString(input.substr(i+1, input.size()))
+                                    GetDataTypeFromString(typeStr)
                             );
 
                             result.Pos = input.size();
@@ -353,7 +355,7 @@ namespace Hunter::Compiler {
             char c = input.at(i);
 
             if (isspace(c)) {
-                std::cout << "Word: " << str << std::endl;
+                COMPILER_INFO("Word: {0}", str);
 
                 str = "";
                 continue;
@@ -463,12 +465,20 @@ namespace Hunter::Compiler {
                     continue;
                 }
 
-                std::cout << "Current expr: " << str << std::endl;
+                COMPILER_INFO("Current expr: {0}", str);
 
-                ParseResult result = ParseExpression(-1, str.length(), str);
+                ParseResult result;
+
+                if (str == "new") {
+                    result = ParseStructConstruction(-1, input.size(), input.substr(i));
+                    i = input.size()+1;
+                    currentPos = input.size()+1;
+                } else {
+                    result = ParseExpression(-1, str.length(), str);
+                }
 
                 if (!result.Expr) {
-                    std::cerr << "Could not parse expression" << std::endl;
+                    COMPILER_ERROR("Could not parse expression");
                     exit(1);
                 }
 
@@ -925,7 +935,7 @@ namespace Hunter::Compiler {
 
         std::string str;
         std::string variableName;
-        Expression * value;
+        Expression * value = nullptr;
 
         bool isParsingVariable = false;
 
@@ -939,10 +949,19 @@ namespace Hunter::Compiler {
                 continue;
             } else if (variableName.empty() && !isParsingVariable) {
                 isParsingVariable = true;
+            } else if (!str.empty() && c == '=') {
+                variableName = str;
+                str = "";
+                isParsingVariable = false;
+
+                ParseResult result = ParseFullExpression(currentPos+2, endPosition, input);
+                value = result.Expr;
+                currentPos = result.Pos+1;
             } else if (!variableName.empty() && c == '=') {
                 ParseResult result = ParseFullExpression(currentPos+2, endPosition, input);
                 value = result.Expr;
                 currentPos = result.Pos+1;
+                i = result.Pos+1;
             }
 
             if (isParsingVariable) {
@@ -951,7 +970,7 @@ namespace Hunter::Compiler {
         }
 
         if (!value) {
-            std::cerr << "Could not parse variable value" << std::endl;
+            COMPILER_ERROR("Could not parse variable value");
             exit(1);
         }
 
@@ -1055,7 +1074,75 @@ namespace Hunter::Compiler {
         };
     }
 
-    ParseResult Parser::ParseIdentifier(int currentPos,  int endPosition, const std::string &input) {
+    ParseResult Parser::ParseStructConstruction(int currentPos, int endPosition, const std::string &input) {
+        COMPILER_INFO("Input: {0}", input);
+
+        for (int i = currentPos+1; i < endPosition; ++i, currentPos++) {
+            char c = input.at(i);
+            if (!isspace(c)) {
+                break;
+            }
+        }
+
+        ParseResult identifierResult = ParseIdentifier(currentPos, endPosition, input);
+        std::string structName = dynamic_cast<IdentifierExpression *>(identifierResult.Expr)->GetVariableName();
+        std::vector<VariableMutationExpression *> attributes;
+
+        currentPos = identifierResult.Pos;
+        std::string str;
+
+        for (int i = currentPos+1; i < endPosition; ++i, currentPos++) {
+            char c = input.at(i);
+
+            if (isspace(c)) {
+                continue;
+            }
+            else if (c == '(') {
+                str = "";
+                continue;
+            }
+            else if (c == ')') {
+                COMPILER_INFO("Current data: {0}", str);
+                ParseResult parseResult = ParseVariableDeclaration(-1, str.length(), str, VariableHandlingType::Assign);
+                i += 1;
+                currentPos += 1;
+
+                if (auto * attr = dynamic_cast<VariableMutationExpression *>(parseResult.Expr)) {
+                    attributes.push_back(attr);
+                } else {
+                    COMPILER_ERROR("Could not parse property assignment for struct");
+                    exit(1);
+                }
+
+                str = "";
+                break;
+            } else if (c == ',') {
+                COMPILER_INFO("Current data: {0}", str);
+                ParseResult parseResult = ParseVariableDeclaration(-1, str.length(), str, VariableHandlingType::Assign);
+                i += 1;
+                currentPos += 1;
+
+                if (auto * attr = dynamic_cast<VariableMutationExpression *>(parseResult.Expr)) {
+                    attributes.push_back(attr);
+                } else {
+                    COMPILER_ERROR("Could not parse property assignment for struct");
+                    exit(1);
+                }
+
+                str = "";
+                continue;
+            }
+
+            str.push_back(c);
+        }
+
+        return {
+            .Pos = currentPos,
+            .Expr = new StructConstructionExpression(structName, attributes)
+        };
+    }
+
+    ParseResult Parser::ParseIdentifier(int currentPos, int endPosition, const std::string &input) {
         std::string str;
 
         for (int i = currentPos+1; i < endPosition; ++i, currentPos++) {

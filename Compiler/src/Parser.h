@@ -60,6 +60,7 @@ namespace Hunter::Compiler {
         ParseResult ParseVariableDeclaration(int currentPos, int endPosition, const std::string & input, VariableHandlingType handlingType);
         ParseResult ParseInt(int currentPos, int endPosition, const std::string & input);
         ParseResult ParseFunctionCall(int currentPos, int endPosition, const std::string & input);
+        ParseResult ParseStructConstruction(int currentPos, int endPosition, const std::string & input);
         ParseResult ParseIdentifier(int currentPos, int endPosition, const std::string & input);
 
     private:

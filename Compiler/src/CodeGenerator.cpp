@@ -70,44 +70,6 @@ namespace Hunter::Compiler {
                 m_Module
         );
 
-        ///////////////////////////  STANDARD FUNCTIONS ///////////////////////////
-        /////// int strcmp(const char *__s1, const char *__s2) {}
-        auto *strcmpFuncType = llvm::FunctionType::get(
-                llvm::Type::getInt32Ty(m_Context),
-                std::vector<llvm::Type *>({
-                    llvm::Type::getInt8PtrTy(m_Context),
-                    llvm::Type::getInt8PtrTy(m_Context)
-                }),
-                false
-        );
-
-        llvm::Function *strcmpFunc = llvm::Function::Create(
-                strcmpFuncType,
-                llvm::Function::ExternalLinkage,
-                "strcmp",
-                m_Module
-        );
-
-        m_Functions["strcmp"] = strcmpFunc;
-
-        /////// printf
-        auto *printfFuncType = llvm::FunctionType::get(
-                llvm::Type::getInt32Ty(m_Context),
-                std::vector<llvm::Type *>({llvm::Type::getInt8PtrTy(m_Context)}),
-                true
-        );
-
-        llvm::Function *printfFunc = llvm::Function::Create(
-                printfFuncType,
-                llvm::Function::ExternalLinkage,
-                "printf",
-                m_Module
-        );
-
-        m_Functions["printf"] = printfFunc;
-
-        ///////////////////////////  STANDARD FUNCTIONS ///////////////////////////
-
         llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(m_Context, "EntryBlock", hunterFunction);
         auto *builder = new llvm::IRBuilder<>(entryBlock);
 
@@ -154,10 +116,8 @@ namespace Hunter::Compiler {
     void CodeGenerator::InsertExpression(llvm::IRBuilder<> *builder, Expression *expr) {
         if (auto *printExpr = dynamic_cast<PrintExpression *>(expr)) {
             InsertPrintExpression(builder, printExpr);
-        } else if (auto *constExpr = dynamic_cast<ConstExpression *>(expr)) {
-            InsertConstExpression(builder, constExpr);
-        } else if (auto *letExpr = dynamic_cast<LetExpression *>(expr)) {
-            InsertLetExpression(builder, letExpr);
+        } else if (auto *varDeclExpr = dynamic_cast<VariableDeclarationExpression *>(expr)) {
+            InsertVarDeclarationExpression(builder, varDeclExpr);
         } else if (auto *varMutExpr = dynamic_cast<VariableMutationExpression *>(expr)) {
             InsertVarMutationExpression(builder, varMutExpr);
         } else if (auto *ifExpr = dynamic_cast<IfExpression *>(expr)) {
@@ -170,6 +130,8 @@ namespace Hunter::Compiler {
             InsertFunctionCallExpression(builder, funcCallExpr);
         } else if (auto *retExpr = dynamic_cast<FunctionReturnExpression *>(expr)) {
             InsertFuncReturnExpression(builder, retExpr);
+        } else if (auto *structExpr = dynamic_cast<StructExpression *>(expr)) {
+            InsertStructDeclareExpression(builder, structExpr);
         } else if (auto *externExpr = dynamic_cast<ExternExpression *>(expr)) {
             if (auto * funcExpr = dynamic_cast<FunctionExpression *>(externExpr->GetData())) {
                 InsertFunctionExpression(builder, funcExpr);
@@ -290,8 +252,27 @@ namespace Hunter::Compiler {
         m_DebugGenerator->PopLocation();
     }
 
+    void CodeGenerator::InsertStructDeclareExpression(llvm::IRBuilder<> *builder, StructExpression *structExpr) {
+        std::vector<llvm::Type *> structTypes;
+
+        for (const auto &propertyExpr : structExpr->GetBody()) {
+            if (auto * property = dynamic_cast<PropertyDeclarationExpression *>(propertyExpr)) {
+                structTypes.push_back(GetTypeFromDataType(builder, property->GetVariableType()));
+            } else {
+                COMPILER_ERROR("Struct body element is not a property: {0}", propertyExpr->GetClassName());
+                exit(1);
+            }
+        }
+
+        std::string structName = structExpr->GetStructName();
+        auto * structType = llvm::StructType::create(m_Context, structTypes, structName);
+
+        m_Structs[structName] = structType;
+        m_StructsDefinitions[structName] = structExpr;
+    }
+
     void CodeGenerator::InsertIfExpression(llvm::IRBuilder<> *builder, IfExpression *ifExpr) {
-        BooleanExpression *condition = dynamic_cast<BooleanExpression *>(ifExpr->GetCondition());
+        auto *condition = dynamic_cast<BooleanExpression *>(ifExpr->GetCondition());
         llvm::Value *compareResult = GetConditionFromExpression(builder, condition);
 
         llvm::Function *func = builder->GetInsertBlock()->getParent();
@@ -485,7 +466,7 @@ namespace Hunter::Compiler {
             llvm::GlobalVariable *var = builder->CreateGlobalString(llvm::StringRef(formatString));
             ops.insert(ops.cbegin(), var);
 
-            builder->CreateCall(m_Functions["printf"], llvm::ArrayRef(ops));
+            builder->CreateCall(GetCLibraryFunction("printf"), llvm::ArrayRef(ops));
         }
     }
 
@@ -513,7 +494,7 @@ namespace Hunter::Compiler {
         auto functionName = funcCallExpr->GetFunctionName();
 
         if (!m_Functions.contains(functionName)) {
-            std::cerr << "Function not defined: " << functionName << std::endl;
+            COMPILER_ERROR("Function not defined: {0}", functionName);
             exit(1);
         }
 
@@ -533,7 +514,7 @@ namespace Hunter::Compiler {
         }
     }
 
-    void CodeGenerator::InsertConstExpression(llvm::IRBuilder<> *builder, ConstExpression *constExpr) {
+    void CodeGenerator::InsertVarDeclarationExpression(llvm::IRBuilder<> *builder, VariableDeclarationExpression *constExpr) {
         m_DebugGenerator->EmitLocation(builder, constExpr);
 
         std::string variableName = constExpr->GetVariableName();
@@ -573,37 +554,29 @@ namespace Hunter::Compiler {
 
             llvm::Value * funcReturnVal = InsertFunctionCallExpression(builder, funcCallExpr);
             builder->CreateStore(funcReturnVal, var);
-        } else {
-            std::cerr << "Const assignment for \"" << variableName << "\" with unknown type" << std::endl;
-            exit(1);
-        }
-    }
+        } else if (auto *structConstrExpr = dynamic_cast<StructConstructionExpression *>(value)) {
+            std::string structName = structConstrExpr->GetStructName();
+            if (!m_Structs.contains(structName)) {
+                COMPILER_ERROR("A struct with the name \"{0}\" does not exist", structName);
+                exit(1);
+            }
 
-    void CodeGenerator::InsertLetExpression(llvm::IRBuilder<> *builder, LetExpression *letExpr) {
-        m_DebugGenerator->EmitLocation(builder, letExpr);
-
-        std::string variableName = letExpr->GetVariableName();
-        Expression *value = letExpr->GetValue();
-
-        if (m_Variables.contains(variableName)) {
-            COMPILER_ERROR("Variable {0} was already defined", variableName);
-            exit(1);
-        }
-
-        if (auto *strExpr = dynamic_cast<StringExpression *>(value)) {
-            llvm::GlobalVariable *strData = builder->CreateGlobalString(llvm::StringRef(strExpr->GetString()));
-            auto *var = builder->CreateAlloca(builder->getInt8PtrTy(), nullptr, variableName);
-            m_DebugGenerator->DefineVariable(builder, var, letExpr);
+            llvm::StructType * structType = m_Structs[structName];
+            llvm::Type * structPointerType = llvm::PointerType::get(structType, 0);
+            auto *var = builder->CreateAlloca(structPointerType, nullptr, variableName);
+            //m_DebugGenerator->DefineVariable(builder, var, structConstrExpr);
 
             m_Variables[variableName] = var;
             m_VariablesExpression[variableName] = value;
 
-            builder->CreateStore(strData, var);
-        } else if (auto *intExpr = dynamic_cast<IntExpression *>(value)) {
-            auto * var = InsertIntExpression(builder, variableName, intExpr);
-            m_DebugGenerator->DefineVariable(builder, var, letExpr);
+            std::vector<llvm::Value *> ops;
+            auto dataLayout = m_Module->getDataLayout();
+            ops.push_back(builder->getInt64(dataLayout.getStructLayout(structType)->getSizeInBytes()));
+
+            auto * structData = builder->CreateCall(GetCLibraryFunction("malloc"), llvm::ArrayRef(ops));
+            builder->CreateStore(structData, var);
         } else {
-            COMPILER_ERROR("Unknown variable data type: {0}", letExpr->GetClassName());
+            COMPILER_ERROR("Const assignment for \"{0}\" with unknown type: {1}", variableName, value->GetClassName());
             exit(1);
         }
     }
@@ -678,6 +651,11 @@ namespace Hunter::Compiler {
         } else if (auto * funcCallExpr = dynamic_cast<FunctionCallExpression *>(variableExpr)) {
             auto * funcDef = m_FunctionsDefinitions[funcCallExpr->GetFunctionName()];
             return builder->CreateLoad(GetTypeFromDataType(builder, funcDef->GetReturnType()), m_Variables[variableName]);
+        } else if (auto * structConstrExpr = dynamic_cast<StructConstructionExpression *>(variableExpr)) {
+            auto * structType = m_Structs[structConstrExpr->GetStructName()];
+            llvm::Type * structPointerType = llvm::PointerType::get(structType, 0);
+
+            return builder->CreateLoad(structPointerType, m_Variables[variableName]);
         } else {
             COMPILER_ERROR("Unsupported expressions for variable values found: {0}", variableExpr->GetClassName());
             exit(1);
@@ -716,6 +694,100 @@ namespace Hunter::Compiler {
         }
     }
 
+    llvm::Value *CodeGenerator::GetEqualsCondition(llvm::IRBuilder<> *builder, BooleanExpression *condition) {
+
+        if (IsInt(condition->Left()) && IsInt(condition->Right())) {
+            return builder->CreateICmpEQ(
+                    GetValueFromExpression(builder, condition->Left()),
+                    GetValueFromExpression(builder, condition->Right())
+            );
+        }
+        else if (IsString(condition->Left()) && IsString(condition->Right())) {
+            std::vector<llvm::Value *> params;
+            params.push_back(GetValueFromExpression(builder, condition->Left()));
+            params.push_back(GetValueFromExpression(builder, condition->Right()));
+
+            llvm::Value * compareResult = builder->CreateCall(GetCLibraryFunction("strcmp"), llvm::ArrayRef(params));
+
+            return builder->CreateICmpEQ(
+                    compareResult,
+                    builder->getInt32(0)
+            );
+        }
+        else {
+            std::cerr << "Unsupported equals operation between these two types" << std::endl;
+            exit(1);
+        }
+    }
+
+    llvm::Function *CodeGenerator::GetCLibraryFunction(const std::string &functionName) {
+
+        if (m_Functions.contains(functionName)) {
+            return m_Functions[functionName];
+        }
+
+        if (functionName == "printf") {
+
+            auto *printfFuncType = llvm::FunctionType::get(
+                    llvm::Type::getInt32Ty(m_Context),
+                    std::vector<llvm::Type *>({llvm::Type::getInt8PtrTy(m_Context)}),
+                    true
+            );
+
+            llvm::Function *printfFunc = llvm::Function::Create(
+                    printfFuncType,
+                    llvm::Function::ExternalLinkage,
+                    "printf",
+                    m_Module
+            );
+
+            m_Functions["printf"] = printfFunc;
+            return printfFunc;
+        } else if (functionName == "strcmp") {
+            /////// int strcmp(const char *__s1, const char *__s2) {}
+            auto *strcmpFuncType = llvm::FunctionType::get(
+                llvm::Type::getInt32Ty(m_Context),
+                std::vector<llvm::Type *>({
+                  llvm::Type::getInt8PtrTy(m_Context),
+                  llvm::Type::getInt8PtrTy(m_Context)
+                }),
+                false
+            );
+
+            llvm::Function *strcmpFunc = llvm::Function::Create(
+                strcmpFuncType,
+                llvm::Function::ExternalLinkage,
+                "strcmp",
+                m_Module
+            );
+
+            m_Functions["strcmp"] = strcmpFunc;
+            return strcmpFunc;
+        } else if (functionName == "malloc") {
+            /////// void * malloc(size: size_t)
+            auto *mallocFuncType = llvm::FunctionType::get(
+                llvm::PointerType::get(llvm::Type::getVoidTy(m_Context), 0),
+                std::vector<llvm::Type *>({
+                  llvm::Type::getInt64Ty(m_Context),
+                }),
+                false
+            );
+
+            llvm::Function *mallocFunc = llvm::Function::Create(
+                    mallocFuncType,
+                    llvm::Function::ExternalLinkage,
+                    "malloc",
+                    m_Module
+            );
+
+            m_Functions["malloc"] = mallocFunc;
+            return mallocFunc;
+        }
+
+        COMPILER_ERROR("No standard function with the name \"{0}\" exists", functionName);
+        exit(1);
+    }
+
     bool CodeGenerator::IsString(Expression * expr) {
         if (dynamic_cast<StringExpression *>(expr)) {
             return true;
@@ -737,32 +809,6 @@ namespace Hunter::Compiler {
         }
         else {
             return false;
-        }
-    }
-
-    llvm::Value *CodeGenerator::GetEqualsCondition(llvm::IRBuilder<> *builder, BooleanExpression *condition) {
-
-        if (IsInt(condition->Left()) && IsInt(condition->Right())) {
-            return builder->CreateICmpEQ(
-                    GetValueFromExpression(builder, condition->Left()),
-                    GetValueFromExpression(builder, condition->Right())
-            );
-        }
-        else if (IsString(condition->Left()) && IsString(condition->Right())) {
-            std::vector<llvm::Value *> params;
-            params.push_back(GetValueFromExpression(builder, condition->Left()));
-            params.push_back(GetValueFromExpression(builder, condition->Right()));
-
-            llvm::Value * compareResult = builder->CreateCall(m_Functions["strcmp"], llvm::ArrayRef(params));
-
-            return builder->CreateICmpEQ(
-                    compareResult,
-                    builder->getInt32(0)
-            );
-        }
-        else {
-            std::cerr << "Unsupported equals operation between these two types" << std::endl;
-            exit(1);
         }
     }
 }
