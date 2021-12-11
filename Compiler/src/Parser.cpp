@@ -107,7 +107,8 @@ namespace Hunter::Compiler {
         int hashPosition = input.find("#");
 
         if (hashPosition != std::string::npos) {
-            if (input.find('"', hashPosition) == std::string::npos) {
+            auto doubleQuotePosition = input.find('"');
+            if (doubleQuotePosition == std::string::npos || doubleQuotePosition > hashPosition) {
                 endPosition = hashPosition-1;
                 m_IsFullLineComment = true;
             }
