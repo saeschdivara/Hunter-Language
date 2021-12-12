@@ -66,7 +66,7 @@ namespace Hunter::Compiler {
         virtual void Dump(int level = 0) = 0;
         virtual bool HasBlock() { return false; }
 
-        void SetDebugData(Hunter::Parser::Debug::DebugData * data) { m_DebugData = data; }
+        virtual void SetDebugData(Hunter::Parser::Debug::DebugData * data) { m_DebugData = data; }
         Hunter::Parser::Debug::DebugData * GetDebugData() const { return m_DebugData; }
 
     protected:
@@ -162,6 +162,11 @@ namespace Hunter::Compiler {
     public:
         ExternExpression(Expression * expr) : m_Data(expr) {}
         Expression * GetData() { return m_Data; }
+
+        void SetDebugData(Hunter::Parser::Debug::DebugData *data) override {
+            Expression::SetDebugData(data);
+            m_Data->SetDebugData(data);
+        }
 
         const char *GetClassName() override {
             return "ExternExpression";

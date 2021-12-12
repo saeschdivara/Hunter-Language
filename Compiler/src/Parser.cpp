@@ -225,13 +225,7 @@ namespace Hunter::Compiler {
                     exit(1);
                 }
 
-                auto * debugData = new Hunter::Parser::Debug::DebugData;
-                debugData->SetDirectory(m_CurrentDirectory);
-                debugData->SetFileName(m_CurrentFileName);
-                debugData->SetFileLine(m_CurrentLine);
-                debugData->SetFileColumn(m_CurrentColumn);
-
-                expr->SetDebugData(debugData);
+                EmitDebugData(expr);
 
                 str = "";
                 continue;
@@ -445,6 +439,8 @@ namespace Hunter::Compiler {
             }
 
         }
+
+        EmitDebugData(expr);
 
         return {
             .Pos = currentPos+1,
@@ -1160,5 +1156,15 @@ namespace Hunter::Compiler {
             .Pos = currentPos,
             .Expr = new IdentifierExpression(str)
         };
+    }
+
+    void Parser::EmitDebugData(Expression *expr) {
+        auto * debugData = new Hunter::Parser::Debug::DebugData;
+        debugData->SetDirectory(m_CurrentDirectory);
+        debugData->SetFileName(m_CurrentFileName);
+        debugData->SetFileLine(m_CurrentLine);
+        debugData->SetFileColumn(m_CurrentColumn);
+
+        expr->SetDebugData(debugData);
     }
 }

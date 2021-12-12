@@ -63,6 +63,9 @@ namespace Hunter::Compiler {
         ParseResult ParseStructConstruction(int currentPos, int endPosition, const std::string & input);
         ParseResult ParseIdentifier(int currentPos, int endPosition, const std::string & input);
 
+    protected:
+        void EmitDebugData(Expression * expr);
+
     private:
         std::string m_DataStr;
         Expression * m_CurrentExpression = nullptr;
