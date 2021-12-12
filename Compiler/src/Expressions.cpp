@@ -195,4 +195,19 @@ namespace Hunter::Compiler {
             exit(1);
         }
     }
+
+    uint64_t StructExpression::GetPropertyIndex(const std::string &propertyName) {
+        uint64_t counter = 0;
+        for (const auto &propertyExpr : GetBody()) {
+            auto * p = dynamic_cast<PropertyDeclarationExpression *>(propertyExpr);
+
+            if (p->GetVariableName() == propertyName) {
+                return counter;
+            }
+
+            counter += 1;
+        }
+
+        return -1;
+    }
 }

@@ -400,6 +400,16 @@ namespace Hunter::Compiler {
 
                 } else if (auto *identifierExpr = dynamic_cast<IdentifierExpression *>(parameter)) {
                     std::string variableName = identifierExpr->GetVariableName();
+                    std::string propertyName;
+
+                    uint64_t lastDotPosition = variableName.find_last_of('.');
+
+                    if (lastDotPosition != std::string::npos) {
+                        propertyName = variableName.substr(lastDotPosition+1);
+                        std::string objectName = variableName.substr(0, lastDotPosition);
+                        variableName = objectName;
+                    }
+
                     if (!m_Variables.contains(variableName)) {
                         COMPILER_ERROR("Could not find variable {0}", variableName);
                         exit(1);
@@ -449,11 +459,33 @@ namespace Hunter::Compiler {
                         auto * funcReturnValue = builder->CreateLoad(funcReturnType, m_Variables[variableName]);
                         ops.push_back(funcReturnValue);
                         formatString += GetFormatPlaceholderFromDataType(funcDef->GetReturnType());
+                    } else if (auto * structConstrExpr = dynamic_cast<StructConstructionExpression *>(variableExpr)) {
+                        std::string structName = structConstrExpr->GetStructName();
+
+                        llvm::StructType * structType = m_Structs[structName];
+                        StructExpression * structExpr = m_StructsDefinitions[structName];
+                        llvm::Type * structPointerType = llvm::PointerType::get(structType, 0);
+                        uint64_t propertyIndex = structExpr->GetPropertyIndex(propertyName);
+
+                        auto * loadedValue = builder->CreateLoad(structPointerType, m_Variables[variableName]);
+
+                        auto * attributePointer = builder->CreateStructGEP(
+                                structType,
+                                builder->CreateBitCast(loadedValue, structPointerType),
+                                propertyIndex
+                        );
+
+                        auto * structPropertyValue = builder->CreateLoad(structPointerType, attributePointer);
+                        ops.push_back(structPropertyValue);
+
+                        auto * propertyExpr = dynamic_cast<PropertyDeclarationExpression *>(structExpr->GetBody().at(propertyIndex));
+                        formatString += GetFormatPlaceholderFromDataType(propertyExpr->GetVariableType());
+
                     } else if (!variableExpr) {
                         COMPILER_ERROR("Invalid expression found for variable {0}", variableName);
                         exit(1);
                     } else {
-                        COMPILER_ERROR("Unknown expression type of variable {0}", variableName);
+                        COMPILER_ERROR("Unknown expression type of variable {0}: {1}", variableName, variableExpr->GetClassName());
                         exit(1);
                     }
 
@@ -562,6 +594,7 @@ namespace Hunter::Compiler {
             }
 
             llvm::StructType * structType = m_Structs[structName];
+            StructExpression * structExpr = m_StructsDefinitions[structName];
             llvm::Type * structPointerType = llvm::PointerType::get(structType, 0);
             auto *var = builder->CreateAlloca(structPointerType, nullptr, variableName);
             //m_DebugGenerator->DefineVariable(builder, var, structConstrExpr);
@@ -574,7 +607,18 @@ namespace Hunter::Compiler {
             ops.push_back(builder->getInt64(dataLayout.getStructLayout(structType)->getSizeInBytes()));
 
             auto * structData = builder->CreateCall(GetCLibraryFunction("malloc"), llvm::ArrayRef(ops));
-            builder->CreateStore(structData, var);
+            auto * value = builder->CreateBitCast(structData, structPointerType);
+            builder->CreateStore(value, var);
+
+            for (const auto &attribute : structConstrExpr->GetAttributes()) {
+                auto * attributePointer = builder->CreateStructGEP(
+                    structType,
+                    value,
+                    structExpr->GetPropertyIndex(attribute->GetVariableName())
+                );
+
+                builder->CreateStore(GetValueFromExpression(builder, attribute->GetValue()), attributePointer);
+            }
         } else {
             COMPILER_ERROR("Const assignment for \"{0}\" with unknown type: {1}", variableName, value->GetClassName());
             exit(1);

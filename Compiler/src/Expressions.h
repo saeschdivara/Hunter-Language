@@ -405,6 +405,8 @@ namespace Hunter::Compiler {
         StructExpression(std::string name) : m_StructName(std::move(name)) {}
         std::string & GetStructName() { return m_StructName; }
 
+        uint64_t GetPropertyIndex(const std::string & propertyName);
+
         const char *GetClassName() override {
             return "StructExpression";
         }

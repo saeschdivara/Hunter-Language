@@ -10,8 +10,8 @@ struct SampleData2
 
 fun hunt()
   const data1 = new SampleData(my_int = 9, my_string = "Hello")
-  const data2 = new SampleData2(my_int = 9, my_string = "Hello")
-  # print("Data 1 Int: ", data1.my_int, "\n")
-  # print("Data 1 String: ", data1.my_string, "\n")
-  # print("Data 2 Int: ", data2.my_int, "\n")
-  # print("Data 2 String: ", data2.my_string, "\n")
+  const data2 = new SampleData2(my_int = 18, my_string = "World")
+  print("Data 1 Int: ", data1.my_int, "\n")
+  print("Data 1 String: ", data1.my_string, "\n")
+  print("Data 2 Int: ", data2.my_int, "\n")
+  print("Data 2 String: ", data2.my_string, "\n")
