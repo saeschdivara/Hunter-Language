@@ -11,26 +11,35 @@ EntryBlock:
   ret i32 0
 }
 
-declare i32 @strcmp(i8*, i8*)
-
-declare i32 @printf(i8*, ...)
-
-define internal void @hunt() {
+define internal void @hunt() !dbg !3 {
 entry:
   %counter = alloca i64, align 8
   store i64 1, i64* %counter, align 4
   br label %for-loop
 
 for-loop:                                         ; preds = %for-loop, %entry
-  %0 = load i64, i64* %counter, align 4
-  %1 = call i32 (i8*, ...) @printf([9 x i8]* @2, [8 x i8]* @0, i64 %0, [2 x i8]* @1)
-  %2 = load i64, i64* %counter, align 4
-  %next-counter = add i64 %2, 1
-  store i64 %next-counter, i64* %counter, align 4
-  %3 = load i64, i64* %counter, align 4
-  %loop-condition = icmp sle i64 %3, 10
-  br i1 %loop-condition, label %for-loop, label %after-for-loop
+  %0 = load i64, i64* %counter, align 4, !dbg !7
+  %1 = call i32 (i8*, ...) @printf([9 x i8]* @2, [8 x i8]* @0, i64 %0, [2 x i8]* @1), !dbg !7
+  %2 = load i64, i64* %counter, align 4, !dbg !7
+  %next-counter = add i64 %2, 1, !dbg !7
+  store i64 %next-counter, i64* %counter, align 4, !dbg !7
+  %3 = load i64, i64* %counter, align 4, !dbg !7
+  %loop-condition = icmp sle i64 %3, 10, !dbg !7
+  br i1 %loop-condition, label %for-loop, label %after-for-loop, !dbg !7
 
 after-for-loop:                                   ; preds = %for-loop
-  ret void
+  ret void, !dbg !7
 }
+
+declare i32 @printf(i8*, ...)
+
+!llvm.dbg.cu = !{!0}
+
+!0 = distinct !DICompileUnit(language: DW_LANG_C, file: !1, producer: "Hunter Compiler", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !2)
+!1 = !DIFile(filename: "for-loop.hunt", directory: "./Examples")
+!2 = !{}
+!3 = distinct !DISubprogram(name: "hunt", scope: !1, file: !1, line: 1, type: !4, scopeLine: 4, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+!4 = !DISubroutineType(types: !5)
+!5 = !{!6}
+!6 = !DIBasicType(name: "void", size: 64)
+!7 = !DILocation(line: 3, column: 14, scope: !3)

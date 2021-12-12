@@ -10,22 +10,44 @@ EntryBlock:
   ret i32 0
 }
 
-declare i32 @strcmp(i8*, i8*)
-
-declare i32 @printf(i8*, ...)
-
-define internal i8 @returning_function() {
+define internal i8 @returning_function() !dbg !3 {
 entry:
   ret i8 8
   ret void
 }
 
-define internal void @hunt() {
+define internal void @hunt() !dbg !7 {
 entry:
-  %output = alloca i8, align 1
-  %0 = call i8 @returning_function()
-  store i8 %0, i8* %output, align 1
-  %1 = load i8, i8* %output, align 1
-  %2 = call i32 (i8*, ...) @printf([5 x i8]* @1, i8 %1, [2 x i8]* @0)
-  ret void
+  %output = alloca i8, align 1, !dbg !11
+  call void @llvm.dbg.declare(metadata i8* %output, metadata !12, metadata !DIExpression()), !dbg !13
+  %0 = call i8 @returning_function(), !dbg !11
+  store i8 %0, i8* %output, align 1, !dbg !11
+  %1 = load i8, i8* %output, align 1, !dbg !14
+  %2 = call i32 (i8*, ...) @printf([5 x i8]* @1, i8 %1, [2 x i8]* @0), !dbg !14
+  ret void, !dbg !14
 }
+
+; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
+declare void @llvm.dbg.declare(metadata, metadata, metadata) #0
+
+declare i32 @printf(i8*, ...)
+
+attributes #0 = { nofree nosync nounwind readnone speculatable willreturn }
+
+!llvm.dbg.cu = !{!0}
+
+!0 = distinct !DICompileUnit(language: DW_LANG_C, file: !1, producer: "Hunter Compiler", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !2)
+!1 = !DIFile(filename: "function-returns.hunt", directory: "./Examples")
+!2 = !{}
+!3 = distinct !DISubprogram(name: "returning_function", scope: !1, file: !1, line: 1, type: !4, scopeLine: 4, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+!4 = !DISubroutineType(types: !5)
+!5 = !{!6}
+!6 = !DIBasicType(name: "int", size: 8)
+!7 = distinct !DISubprogram(name: "hunt", scope: !1, file: !1, line: 4, type: !8, scopeLine: 4, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+!8 = !DISubroutineType(types: !9)
+!9 = !{!10}
+!10 = !DIBasicType(name: "void", size: 64)
+!11 = !DILocation(line: 5, column: 10, scope: !7)
+!12 = !DILocalVariable(name: "output", scope: !7, file: !1, line: 5, type: !6)
+!13 = !DILocation(line: 5, scope: !7)
+!14 = !DILocation(line: 6, column: 10, scope: !7)

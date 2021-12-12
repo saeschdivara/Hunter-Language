@@ -11,15 +11,35 @@ EntryBlock:
   ret i32 0
 }
 
-declare i32 @strcmp(i8*, i8*)
+define internal void @hunt() !dbg !3 {
+entry:
+  %helloWorld = alloca i8*, align 8, !dbg !7
+  call void @llvm.dbg.declare(metadata i8** %helloWorld, metadata !8, metadata !DIExpression()), !dbg !11
+  store [12 x i8]* @0, i8** %helloWorld, align 8, !dbg !7
+  %0 = load i8*, i8** %helloWorld, align 8, !dbg !12
+  %1 = call i32 (i8*, ...) @printf([5 x i8]* @2, i8* %0, [2 x i8]* @1), !dbg !12
+  ret void, !dbg !12
+}
+
+; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
+declare void @llvm.dbg.declare(metadata, metadata, metadata) #0
 
 declare i32 @printf(i8*, ...)
 
-define internal void @hunt() {
-entry:
-  %helloWorld = alloca i8*, align 8
-  store [12 x i8]* @0, i8** %helloWorld, align 8
-  %0 = load i8*, i8** %helloWorld, align 8
-  %1 = call i32 (i8*, ...) @printf([5 x i8]* @2, i8* %0, [2 x i8]* @1)
-  ret void
-}
+attributes #0 = { nofree nosync nounwind readnone speculatable willreturn }
+
+!llvm.dbg.cu = !{!0}
+
+!0 = distinct !DICompileUnit(language: DW_LANG_C, file: !1, producer: "Hunter Compiler", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !2)
+!1 = !DIFile(filename: "print-string-const.hunt", directory: "./Examples")
+!2 = !{}
+!3 = distinct !DISubprogram(name: "hunt", scope: !1, file: !1, line: 1, type: !4, scopeLine: 4, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+!4 = !DISubroutineType(types: !5)
+!5 = !{!6}
+!6 = !DIBasicType(name: "void", size: 64)
+!7 = !DILocation(line: 2, column: 10, scope: !3)
+!8 = !DILocalVariable(name: "helloWorld", scope: !3, file: !1, line: 2, type: !9)
+!9 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !10, size: 64)
+!10 = !DIBasicType(name: "char", size: 8)
+!11 = !DILocation(line: 2, scope: !3)
+!12 = !DILocation(line: 3, column: 10, scope: !3)

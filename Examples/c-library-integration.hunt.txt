@@ -7,28 +7,61 @@ EntryBlock:
   ret i32 0
 }
 
-declare i32 @strcmp(i8*, i8*)
+declare !dbg !3 internal void* @malloc(i64)
 
-declare i32 @printf(i8*, ...)
+declare !dbg !9 internal void @memset(void*, i64, i64)
 
-declare internal void* @malloc(i64)
+declare !dbg !12 internal void @free(void*)
 
-declare internal void @memset(void*, i64, i64)
-
-declare internal void @free(void*)
-
-define internal void @hunt() {
+define internal void @hunt() !dbg !15 {
 entry:
-  %memory_size = alloca i16, align 2
-  store i16 500, i16* %memory_size, align 2
-  %data = alloca void*, align 8
-  %0 = load i16, i16* %memory_size, align 2
-  %1 = call void* @malloc(i16 %0)
-  store void* %1, void** %data, align 8
-  %2 = load void*, void** %data, align 8
-  %3 = load i16, i16* %memory_size, align 2
-  call void @memset(void* %2, i8 0, i16 %3)
-  %4 = load void*, void** %data, align 8
-  call void @free(void* %4)
-  ret void
+  %memory_size = alloca i16, align 2, !dbg !18
+  store i16 500, i16* %memory_size, align 2, !dbg !18
+  call void @llvm.dbg.declare(metadata i16* %memory_size, metadata !19, metadata !DIExpression()), !dbg !21
+  %data = alloca void*, align 8, !dbg !22
+  call void @llvm.dbg.declare(metadata void** %data, metadata !23, metadata !DIExpression()), !dbg !24
+  %0 = load i16, i16* %memory_size, align 2, !dbg !22
+  %1 = call void* @malloc(i16 %0), !dbg !22
+  store void* %1, void** %data, align 8, !dbg !22
+  %2 = load void*, void** %data, align 8, !dbg !25
+  %3 = load i16, i16* %memory_size, align 2, !dbg !25
+  call void @memset(void* %2, i8 0, i16 %3), !dbg !25
+  %4 = load void*, void** %data, align 8, !dbg !26
+  call void @free(void* %4), !dbg !26
+  ret void, !dbg !26
 }
+
+; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
+declare void @llvm.dbg.declare(metadata, metadata, metadata) #0
+
+attributes #0 = { nofree nosync nounwind readnone speculatable willreturn }
+
+!llvm.dbg.cu = !{!0}
+
+!0 = distinct !DICompileUnit(language: DW_LANG_C, file: !1, producer: "Hunter Compiler", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !2)
+!1 = !DIFile(filename: "c-library-integration.hunt", directory: "./Examples")
+!2 = !{}
+!3 = distinct !DISubprogram(name: "malloc", scope: !1, file: !1, line: 1, type: !4, scopeLine: 7, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+!4 = !DISubroutineType(types: !5)
+!5 = !{!6, !8}
+!6 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !7, size: 64)
+!7 = !DIBasicType(name: "void", size: 64)
+!8 = !DIBasicType(name: "int", size: 64)
+!9 = distinct !DISubprogram(name: "memset", scope: !1, file: !1, line: 2, type: !10, scopeLine: 7, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+!10 = !DISubroutineType(types: !11)
+!11 = !{!7, !6, !8, !8}
+!12 = distinct !DISubprogram(name: "free", scope: !1, file: !1, line: 3, type: !13, scopeLine: 7, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+!13 = !DISubroutineType(types: !14)
+!14 = !{!7, !6}
+!15 = distinct !DISubprogram(name: "hunt", scope: !1, file: !1, line: 5, type: !16, scopeLine: 4, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+!16 = !DISubroutineType(types: !17)
+!17 = !{!7}
+!18 = !DILocation(line: 6, column: 10, scope: !15)
+!19 = !DILocalVariable(name: "memory_size", scope: !15, file: !1, line: 6, type: !20)
+!20 = !DIBasicType(name: "int", size: 16)
+!21 = !DILocation(line: 6, scope: !15)
+!22 = !DILocation(line: 7, column: 10, scope: !15)
+!23 = !DILocalVariable(name: "data", scope: !15, file: !1, line: 7, type: !6)
+!24 = !DILocation(line: 7, scope: !15)
+!25 = !DILocation(line: 8, column: 11, scope: !15)
+!26 = !DILocation(line: 9, column: 9, scope: !15)

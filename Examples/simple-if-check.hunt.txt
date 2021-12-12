@@ -10,25 +10,44 @@ EntryBlock:
   ret i32 0
 }
 
-declare i32 @strcmp(i8*, i8*)
+define internal void @hunt() !dbg !3 {
+entry:
+  %num = alloca i8, align 1, !dbg !7
+  store i8 8, i8* %num, align 1, !dbg !7
+  call void @llvm.dbg.declare(metadata i8* %num, metadata !8, metadata !DIExpression()), !dbg !10
+  %0 = load i8, i8* %num, align 1, !dbg !7
+  %1 = icmp eq i8 %0, 8, !dbg !7
+  br i1 %1, label %then, label %else, !dbg !7
+
+then:                                             ; preds = %entry
+  %2 = call i32 (i8*, ...) @printf([3 x i8]* @1, [9 x i8]* @0), !dbg !11
+  br label %endIf, !dbg !11
+
+else:                                             ; preds = %entry
+  br label %endIf, !dbg !11
+
+endIf:                                            ; preds = %else, %then
+  ret void, !dbg !11
+}
+
+; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
+declare void @llvm.dbg.declare(metadata, metadata, metadata) #0
 
 declare i32 @printf(i8*, ...)
 
-define internal void @hunt() {
-entry:
-  %num = alloca i8, align 1
-  store i8 8, i8* %num, align 1
-  %0 = load i8, i8* %num, align 1
-  %1 = icmp eq i8 %0, 8
-  br i1 %1, label %then, label %else
+attributes #0 = { nofree nosync nounwind readnone speculatable willreturn }
 
-then:                                             ; preds = %entry
-  %2 = call i32 (i8*, ...) @printf([3 x i8]* @1, [9 x i8]* @0)
-  br label %endIf
+!llvm.dbg.cu = !{!0}
 
-else:                                             ; preds = %entry
-  br label %endIf
-
-endIf:                                            ; preds = %else, %then
-  ret void
-}
+!0 = distinct !DICompileUnit(language: DW_LANG_C, file: !1, producer: "Hunter Compiler", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !2)
+!1 = !DIFile(filename: "simple-if-check.hunt", directory: "./Examples")
+!2 = !{}
+!3 = distinct !DISubprogram(name: "hunt", scope: !1, file: !1, line: 1, type: !4, scopeLine: 4, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+!4 = !DISubroutineType(types: !5)
+!5 = !{!6}
+!6 = !DIBasicType(name: "void", size: 64)
+!7 = !DILocation(line: 2, column: 10, scope: !3)
+!8 = !DILocalVariable(name: "num", scope: !3, file: !1, line: 2, type: !9)
+!9 = !DIBasicType(name: "int", size: 8)
+!10 = !DILocation(line: 2, scope: !3)
+!11 = !DILocation(line: 5, column: 14, scope: !3)

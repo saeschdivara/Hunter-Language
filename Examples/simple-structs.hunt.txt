@@ -1,0 +1,83 @@
+; ModuleID = 'Hunt'
+source_filename = "Hunt"
+
+%SampleData = type { i8, i8* }
+%SampleData2 = type { i16, i8* }
+
+@0 = private unnamed_addr constant [6 x i8] c"Hello\00", align 1
+@1 = private unnamed_addr constant [6 x i8] c"World\00", align 1
+@2 = private unnamed_addr constant [13 x i8] c"Data 1 Int: \00", align 1
+@3 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@4 = private unnamed_addr constant [7 x i8] c"%s%d%s\00", align 1
+@5 = private unnamed_addr constant [16 x i8] c"Data 1 String: \00", align 1
+@6 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@7 = private unnamed_addr constant [7 x i8] c"%s%s%s\00", align 1
+@8 = private unnamed_addr constant [13 x i8] c"Data 2 Int: \00", align 1
+@9 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@10 = private unnamed_addr constant [7 x i8] c"%s%d%s\00", align 1
+@11 = private unnamed_addr constant [16 x i8] c"Data 2 String: \00", align 1
+@12 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@13 = private unnamed_addr constant [7 x i8] c"%s%s%s\00", align 1
+
+define i32 @main() {
+EntryBlock:
+  call void @hunt()
+  ret i32 0
+}
+
+define internal void @hunt() !dbg !3 {
+entry:
+  %data1 = alloca %SampleData*, align 8, !dbg !7
+  %0 = call void* @malloc(i64 16), !dbg !7
+  %1 = bitcast void* %0 to %SampleData*, !dbg !7
+  store %SampleData* %1, %SampleData** %data1, align 8, !dbg !7
+  %2 = getelementptr inbounds %SampleData, %SampleData* %1, i32 0, i32 0, !dbg !7
+  store i8 9, i8* %2, align 1, !dbg !7
+  %3 = getelementptr inbounds %SampleData, %SampleData* %1, i32 0, i32 1, !dbg !7
+  store [6 x i8]* @0, i8** %3, align 8, !dbg !7
+  %data2 = alloca %SampleData2*, align 8, !dbg !8
+  %4 = call void* @malloc(i64 16), !dbg !8
+  %5 = bitcast void* %4 to %SampleData2*, !dbg !8
+  store %SampleData2* %5, %SampleData2** %data2, align 8, !dbg !8
+  %6 = getelementptr inbounds %SampleData2, %SampleData2* %5, i32 0, i32 0, !dbg !8
+  store i8 18, i16* %6, align 1, !dbg !8
+  %7 = getelementptr inbounds %SampleData2, %SampleData2* %5, i32 0, i32 1, !dbg !8
+  store [6 x i8]* @1, i8** %7, align 8, !dbg !8
+  %8 = load %SampleData*, %SampleData** %data1, align 8, !dbg !9
+  %9 = getelementptr inbounds %SampleData, %SampleData* %8, i32 0, i32 0, !dbg !9
+  %10 = load %SampleData*, i8* %9, align 8, !dbg !9
+  %11 = call i32 (i8*, ...) @printf([7 x i8]* @4, [13 x i8]* @2, %SampleData* %10, [2 x i8]* @3), !dbg !9
+  %12 = load %SampleData*, %SampleData** %data1, align 8, !dbg !10
+  %13 = getelementptr inbounds %SampleData, %SampleData* %12, i32 0, i32 1, !dbg !10
+  %14 = load %SampleData*, i8** %13, align 8, !dbg !10
+  %15 = call i32 (i8*, ...) @printf([7 x i8]* @7, [16 x i8]* @5, %SampleData* %14, [2 x i8]* @6), !dbg !10
+  %16 = load %SampleData2*, %SampleData2** %data2, align 8, !dbg !11
+  %17 = getelementptr inbounds %SampleData2, %SampleData2* %16, i32 0, i32 0, !dbg !11
+  %18 = load %SampleData2*, i16* %17, align 8, !dbg !11
+  %19 = call i32 (i8*, ...) @printf([7 x i8]* @10, [13 x i8]* @8, %SampleData2* %18, [2 x i8]* @9), !dbg !11
+  %20 = load %SampleData2*, %SampleData2** %data2, align 8, !dbg !12
+  %21 = getelementptr inbounds %SampleData2, %SampleData2* %20, i32 0, i32 1, !dbg !12
+  %22 = load %SampleData2*, i8** %21, align 8, !dbg !12
+  %23 = call i32 (i8*, ...) @printf([7 x i8]* @13, [16 x i8]* @11, %SampleData2* %22, [2 x i8]* @12), !dbg !12
+  ret void, !dbg !12
+}
+
+declare void* @malloc(i64)
+
+declare i32 @printf(i8*, ...)
+
+!llvm.dbg.cu = !{!0}
+
+!0 = distinct !DICompileUnit(language: DW_LANG_C, file: !1, producer: "Hunter Compiler", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !2)
+!1 = !DIFile(filename: "simple-structs.hunt", directory: "./Examples")
+!2 = !{}
+!3 = distinct !DISubprogram(name: "hunt", scope: !1, file: !1, line: 11, type: !4, scopeLine: 4, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+!4 = !DISubroutineType(types: !5)
+!5 = !{!6}
+!6 = !DIBasicType(name: "void", size: 64)
+!7 = !DILocation(line: 12, column: 8, scope: !3)
+!8 = !DILocation(line: 13, column: 8, scope: !3)
+!9 = !DILocation(line: 14, column: 8, scope: !3)
+!10 = !DILocation(line: 15, column: 8, scope: !3)
+!11 = !DILocation(line: 16, column: 8, scope: !3)
+!12 = !DILocation(line: 17, column: 8, scope: !3)

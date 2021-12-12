@@ -12,6 +12,7 @@ files_to_test = [
     ('./Examples/if-else-conditions.hunt', './Examples/if-else-conditions.hunt.txt'),
     ('./Examples/print-string-const.hunt', './Examples/print-string-const.hunt.txt'),
     ('./Examples/simple-if-check.hunt', './Examples/simple-if-check.hunt.txt'),
+    ('./Examples/simple-structs.hunt', './Examples/simple-structs.hunt.txt'),
     ('./Examples/single-line-comments.hunt', './Examples/single-line-comments.hunt.txt'),
     ('./Examples/string-compare.hunt', './Examples/string-compare.hunt.txt'),
     ('./Examples/use-all-int-types.hunt', './Examples/use-all-int-types.hunt.txt'),

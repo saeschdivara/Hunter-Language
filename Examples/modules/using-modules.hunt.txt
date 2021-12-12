@@ -10,18 +10,29 @@ EntryBlock:
   ret i32 0
 }
 
-declare i32 @strcmp(i8*, i8*)
+define internal void @helpers.foo() !dbg !3 {
+entry:
+  %0 = call i32 (i8*, ...) @printf([3 x i8]* @1, [27 x i8]* @0), !dbg !7
+  ret void, !dbg !7
+}
 
 declare i32 @printf(i8*, ...)
 
-define internal void @helpers.foo() {
+define internal void @hunt() !dbg !8 {
 entry:
-  %0 = call i32 (i8*, ...) @printf([3 x i8]* @1, [27 x i8]* @0)
-  ret void
+  call void @helpers.foo(), !dbg !9
+  ret void, !dbg !9
 }
 
-define internal void @hunt() {
-entry:
-  call void @helpers.foo()
-  ret void
-}
+!llvm.dbg.cu = !{!0}
+
+!0 = distinct !DICompileUnit(language: DW_LANG_C, file: !1, producer: "Hunter Compiler", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !2)
+!1 = !DIFile(filename: "helpers.hunt", directory: "./Examples/modules")
+!2 = !{}
+!3 = distinct !DISubprogram(name: "helpers.foo", scope: !1, file: !1, line: 3, type: !4, scopeLine: 4, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+!4 = !DISubroutineType(types: !5)
+!5 = !{!6}
+!6 = !DIBasicType(name: "void", size: 64)
+!7 = !DILocation(line: 4, column: 8, scope: !3)
+!8 = distinct !DISubprogram(name: "hunt", scope: !1, file: !1, line: 4, type: !4, scopeLine: 4, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+!9 = !DILocation(line: 5, column: 14, scope: !8)

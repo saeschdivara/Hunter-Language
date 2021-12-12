@@ -21,31 +21,60 @@ EntryBlock:
   ret i32 0
 }
 
-declare i32 @strcmp(i8*, i8*)
-
-declare i32 @printf(i8*, ...)
-
-define internal void @advanced_function(i8 %number, i8* %str) {
+define internal void @advanced_function(i8 %number, i8* %str) !dbg !3 {
 entry:
   %number1 = alloca i8, align 1
   store i8 %number, i8* %number1, align 1
   %str2 = alloca i8*, align 8
   store i8* %str, i8** %str2, align 8
-  %0 = call i32 (i8*, ...) @printf([3 x i8]* @1, [30 x i8]* @0)
-  %1 = load i8, i8* %number1, align 1
-  %2 = call i32 (i8*, ...) @printf([7 x i8]* @4, [9 x i8]* @2, i8 %1, [2 x i8]* @3)
-  %3 = load i8*, i8** %str2, align 8
-  %4 = call i32 (i8*, ...) @printf([7 x i8]* @7, [9 x i8]* @5, i8* %3, [2 x i8]* @6)
-  ret void
+  %0 = call i32 (i8*, ...) @printf([3 x i8]* @1, [30 x i8]* @0), !dbg !10
+  %1 = load i8, i8* %number1, align 1, !dbg !11
+  %2 = call i32 (i8*, ...) @printf([7 x i8]* @4, [9 x i8]* @2, i8 %1, [2 x i8]* @3), !dbg !11
+  %3 = load i8*, i8** %str2, align 8, !dbg !12
+  %4 = call i32 (i8*, ...) @printf([7 x i8]* @7, [9 x i8]* @5, i8* %3, [2 x i8]* @6), !dbg !12
+  ret void, !dbg !12
 }
 
-define internal void @hunt() {
+declare i32 @printf(i8*, ...)
+
+define internal void @hunt() !dbg !13 {
 entry:
-  %0 = call i32 (i8*, ...) @printf([3 x i8]* @9, [42 x i8]* @8)
-  %my_str = alloca i8*, align 8
-  store [10 x i8]* @10, i8** %my_str, align 8
-  %1 = load i8*, i8** %my_str, align 8
-  call void @advanced_function(i8 8, i8* %1)
-  %2 = call i32 (i8*, ...) @printf([3 x i8]* @12, [41 x i8]* @11)
-  ret void
+  %0 = call i32 (i8*, ...) @printf([3 x i8]* @9, [42 x i8]* @8), !dbg !16
+  %my_str = alloca i8*, align 8, !dbg !17
+  call void @llvm.dbg.declare(metadata i8** %my_str, metadata !18, metadata !DIExpression()), !dbg !19
+  store [10 x i8]* @10, i8** %my_str, align 8, !dbg !17
+  %1 = load i8*, i8** %my_str, align 8, !dbg !20
+  call void @advanced_function(i8 8, i8* %1), !dbg !20
+  %2 = call i32 (i8*, ...) @printf([3 x i8]* @12, [41 x i8]* @11), !dbg !21
+  ret void, !dbg !21
 }
+
+; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
+declare void @llvm.dbg.declare(metadata, metadata, metadata) #0
+
+attributes #0 = { nofree nosync nounwind readnone speculatable willreturn }
+
+!llvm.dbg.cu = !{!0}
+
+!0 = distinct !DICompileUnit(language: DW_LANG_C, file: !1, producer: "Hunter Compiler", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !2)
+!1 = !DIFile(filename: "function-calls-with-parameters.hunt", directory: "./Examples")
+!2 = !{}
+!3 = distinct !DISubprogram(name: "advanced_function", scope: !1, file: !1, line: 1, type: !4, scopeLine: 4, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+!4 = !DISubroutineType(types: !5)
+!5 = !{!6, !7, !8}
+!6 = !DIBasicType(name: "void", size: 64)
+!7 = !DIBasicType(name: "int", size: 8)
+!8 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !9, size: 64)
+!9 = !DIBasicType(name: "char", size: 8)
+!10 = !DILocation(line: 2, column: 8, scope: !3)
+!11 = !DILocation(line: 3, column: 8, scope: !3)
+!12 = !DILocation(line: 4, column: 8, scope: !3)
+!13 = distinct !DISubprogram(name: "hunt", scope: !1, file: !1, line: 6, type: !14, scopeLine: 4, flags: DIFlagPrototyped, spFlags: DISPFlagDefinition, unit: !0, retainedNodes: !2)
+!14 = !DISubroutineType(types: !15)
+!15 = !{!6}
+!16 = !DILocation(line: 7, column: 8, scope: !13)
+!17 = !DILocation(line: 8, column: 8, scope: !13)
+!18 = !DILocalVariable(name: "my_str", scope: !13, file: !1, line: 8, type: !8)
+!19 = !DILocation(line: 8, scope: !13)
+!20 = !DILocation(line: 9, column: 20, scope: !13)
+!21 = !DILocation(line: 10, column: 8, scope: !13)
