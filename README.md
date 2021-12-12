@@ -10,7 +10,7 @@ We want to be able to write the compiler in our own language. So what do we need
 2. [x] Loops for and while
 4. [x] Support of modules (simple version)
 5. [x] C-Libraries integration / using functions from any arbitrary library (using c call convention)
-3. [ ] Structs
+3. [x] Structs
 3. [ ] External structs
 3. [ ] Pointers
 4. [ ] String operations
