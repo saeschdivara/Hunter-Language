@@ -17,10 +17,8 @@ namespace Hunter::Compiler {
                 replaceAll(module, ".", "/");
                 std::string moduleFilePath = basePath + "/" + module + ".hunt";
 
-                std::string input = readFileIntoString(moduleFilePath);
-
                 Parser parser;
-                AbstractSyntaxTree * ast = parser.Parse(input);
+                AbstractSyntaxTree * ast = parser.Parse(moduleFilePath);
                 auto & importedInstructions = ast->GetInstructions();
 
                 auto * moduleInstr = dynamic_cast<ModuleExpression *>(importedInstructions.at(0));

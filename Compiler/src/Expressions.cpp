@@ -179,21 +179,7 @@ namespace Hunter::Compiler {
     }
 
     DataType VariableDeclarationExpression::GetVariableType() {
-
-        if (m_Type != DataType::Unknown) {
-            return m_Type;
-        }
-
-        auto * value = GetValue();
-
-        if (dynamic_cast<StringExpression *>(value)) {
-            return DataType::String;
-        } else if (auto *intExpr = dynamic_cast<IntExpression *>(value)) {
-            return static_cast<DataType>(GetTypeFromValue(intExpr->GetValue()));
-        } else {
-            COMPILER_ERROR("Not supported variable value type: {0}", value->GetClassName());
-            exit(1);
-        }
+        return m_Type;
     }
 
     uint64_t StructExpression::GetPropertyIndex(const std::string &propertyName) {
