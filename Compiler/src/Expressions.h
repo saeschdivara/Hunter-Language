@@ -202,7 +202,7 @@ namespace Hunter::Compiler {
 
     class VariableDeclarationExpression : public Expression {
     public:
-        VariableDeclarationExpression(std::string name, Expression * value) : m_VariableName(std::move(name)), m_Value(value) {}
+        VariableDeclarationExpression(std::string name, Expression * value) : m_VariableName(std::move(name)), m_Type(DataType::Unknown), m_Value(value) {}
         VariableDeclarationExpression(std::string name, DataType type) :
             m_VariableName(std::move(name)), m_Type(type), m_Value(nullptr) {}
         std::string & GetVariableName() { return m_VariableName; }
