@@ -472,6 +472,15 @@ namespace Hunter::Compiler {
                     i = input.size()+1;
                     currentPos = input.size()+1;
                 } else {
+                    uint64_t parenthesisPos = str.find('(');
+
+                    if (parenthesisPos != std::string::npos) {
+                        uint64_t closingParenthesisPos = input.find(')')+1;
+                        str = input.substr(i - str.length(), closingParenthesisPos);
+                        i = closingParenthesisPos;
+                        currentPos = closingParenthesisPos;
+                    }
+
                     result = ParseExpression(-1, str.length(), str);
                 }
 

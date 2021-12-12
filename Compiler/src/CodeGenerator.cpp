@@ -43,8 +43,7 @@ namespace Hunter::Compiler {
                 exit(1);
             }
             case DataType::Memory: {
-                COMPILER_ERROR("Memory data type has not a format string yet");
-                exit(1);
+                return "%s";
             }
             case DataType::String:
                 return "%s";
