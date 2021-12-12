@@ -14,11 +14,16 @@ namespace Hunter::Parser::Debug {
     class DebugData;
 }
 
+namespace Hunter::Compiler {
+    class CodeGenerator;
+}
+
 namespace Hunter::Compiler::Debug {
 
     class DebugGenerator {
     public:
-        DebugGenerator(llvm::Module * module) : m_DebugInfoBuilder(new llvm::DIBuilder(*module)) {}
+        DebugGenerator(llvm::Module * module, Hunter::Compiler::CodeGenerator * generator)
+            : m_DebugInfoBuilder(new llvm::DIBuilder(*module)), m_CodeGenerator(generator) {}
 
         void CreateCompileUnit(Hunter::Parser::Debug::DebugData * data);
         void DefineFunction(llvm::Function * func, FunctionExpression * expr);
@@ -35,6 +40,8 @@ namespace Hunter::Compiler::Debug {
         llvm::DIBuilder * m_DebugInfoBuilder = nullptr;
         llvm::DICompileUnit * m_CompileUnit;
         std::vector<llvm::DIScope *> m_LexicalBlocks;
+
+        Hunter::Compiler::CodeGenerator * m_CodeGenerator;
     };
 
 }

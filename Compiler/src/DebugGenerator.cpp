@@ -1,4 +1,5 @@
 #include "DebugGenerator.h"
+#include "CodeGenerator.h"
 #include "DebugData.h"
 #include "Expressions.h"
 #include "./utils/logger.h"
@@ -51,7 +52,7 @@ namespace Hunter::Compiler::Debug {
 
         if (auto * var = dynamic_cast<VariableDeclarationExpression *>(expr)) {
             variableName = var->GetVariableName();
-            variableType = GetDebugDatatype(var->GetVariableType());
+            variableType = GetDebugDatatype(m_CodeGenerator->GetVariableDeclarationType(var));
         }
         else {
             COMPILER_ERROR("Unknown type for variable type: {0}", expr->GetClassName());

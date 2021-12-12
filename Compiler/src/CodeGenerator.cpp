@@ -75,7 +75,7 @@ namespace Hunter::Compiler {
 
         for (const auto &instr : ast->GetInstructions()) {
             if (!m_DebugGenerator) {
-                m_DebugGenerator = new Debug::DebugGenerator(m_Module);
+                m_DebugGenerator = new Debug::DebugGenerator(m_Module, this);
                 auto * debugData = instr->GetDebugData();
                 m_DebugGenerator->CreateCompileUnit(debugData);
             }
@@ -257,7 +257,7 @@ namespace Hunter::Compiler {
 
         for (const auto &propertyExpr : structExpr->GetBody()) {
             if (auto * property = dynamic_cast<PropertyDeclarationExpression *>(propertyExpr)) {
-                structTypes.push_back(GetTypeFromDataType(builder, property->GetVariableType()));
+                structTypes.push_back(GetTypeFromDataType(builder, GetVariableDeclarationType(property)));
             } else {
                 COMPILER_ERROR("Struct body element is not a property: {0}", propertyExpr->GetClassName());
                 exit(1);
@@ -479,7 +479,7 @@ namespace Hunter::Compiler {
                         ops.push_back(structPropertyValue);
 
                         auto * propertyExpr = dynamic_cast<PropertyDeclarationExpression *>(structExpr->GetBody().at(propertyIndex));
-                        formatString += GetFormatPlaceholderFromDataType(propertyExpr->GetVariableType());
+                        formatString += GetFormatPlaceholderFromDataType(GetVariableDeclarationType(propertyExpr));
 
                     } else if (!variableExpr) {
                         COMPILER_ERROR("Invalid expression found for variable {0}", variableName);
@@ -661,6 +661,28 @@ namespace Hunter::Compiler {
         builder->CreateStore(GetIntValue(builder, intExpr), var);
 
         return var;
+    }
+
+    DataType CodeGenerator::GetVariableDeclarationType(VariableDeclarationExpression *expr) {
+        DataType type = expr->GetVariableType();
+
+        if (type != DataType::Unknown) {
+            return type;
+        }
+
+        auto * value = expr->GetValue();
+
+        if (dynamic_cast<StringExpression *>(value)) {
+            return DataType::String;
+        } else if (auto *intExpr = dynamic_cast<IntExpression *>(value)) {
+            return static_cast<DataType>(GetTypeFromValue(intExpr->GetValue()));
+        } else if (auto *funcCallExpr = dynamic_cast<FunctionCallExpression *>(value)) {
+            auto * funcDef = m_FunctionsDefinitions[funcCallExpr->GetFunctionName()];
+            return funcDef->GetReturnType();
+        } else {
+            COMPILER_ERROR("Not supported variable value type: {0}", value->GetClassName());
+            exit(1);
+        }
     }
 
     llvm::Value *CodeGenerator::GetValueFromExpression(llvm::IRBuilder<> *builder, Expression *expr) {
