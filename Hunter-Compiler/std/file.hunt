@@ -1,0 +1,10 @@
+mod file
+
+import std.string
+import std.memory_management
+
+extern fun fopen(file_name: string, mode: string) : memory
+# size_t	 fread(void * __restrict __ptr, size_t __size, size_t __nitems, FILE * __restrict __stream);
+extern fun fread(data_ptr: memory, total_read_size: i64, memory_size: i64, file_ptr: memory): i64
+
+

@@ -13,6 +13,7 @@ We want to be able to write the compiler in our own language. So what do we need
 3. [x] Structs
 3. [ ] External structs
 3. [ ] Pointers
+3. [ ] Custom type validation (parameter and return values)
 3. [ ] Traits and their implementation
 4. [ ] String operations
 3. [ ] File interaction (read / write)

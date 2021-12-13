@@ -16,6 +16,10 @@ namespace Hunter::Compiler {
             m_Expressions.push_back(expr);
         }
 
+        void SetInstructions(const std::vector<Expression *> & instructions) {
+            m_Expressions = instructions;
+        }
+
         std::vector<Expression *> & GetInstructions() {
             return m_Expressions;
         }

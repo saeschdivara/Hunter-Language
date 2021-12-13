@@ -30,7 +30,6 @@ namespace Hunter::Compiler {
 
             if (c == '\n') {
                 m_CurrentLine += 1;
-                std::cout << m_DataStr << std::endl;
 
                 if (m_DataStr.empty()) {
                     continue;
@@ -140,8 +139,6 @@ namespace Hunter::Compiler {
             }
 
             if (isspace(c) || c == '(' || c == ':') {
-                std::cout << "Word 1: " << str << std::endl;
-
                 if (str == "import") {
                     ParseResult result = ParseImport(i, endPosition, input);
                     i = result.Pos+1;
@@ -235,8 +232,6 @@ namespace Hunter::Compiler {
             str.push_back(c);
         }
 
-        std::cout << "Word 2: " << str << std::endl;
-
         if (!str.empty()) {
             // this happens if there is a single keyword like 'else' and there is no space left afterwards
             if (str == "else") {
@@ -246,8 +241,6 @@ namespace Hunter::Compiler {
                 exit(1);
             }
         }
-
-        std::cout << "Level: " << level << std::endl;
 
         return expr;
     }
@@ -304,7 +297,6 @@ namespace Hunter::Compiler {
             if (isspace(c) && str.empty()) {
                 continue;
             } else if (isspace(c)) {
-                std::cout << "Import: " << str << std::endl;
                 str = "";
                 continue;
             }
@@ -329,7 +321,6 @@ namespace Hunter::Compiler {
             if (isspace(c) && str.empty()) {
                 continue;
             } else if (isspace(c)) {
-                std::cout << "Module: " << str << std::endl;
                 break;
             }
 
@@ -370,7 +361,6 @@ namespace Hunter::Compiler {
                     expr = result.Expr;
 
                 } else {
-                    std::cout << "Word: " << str << std::endl;
                     str = "";
                     continue;
                 }
@@ -378,14 +368,11 @@ namespace Hunter::Compiler {
             }
 
             else if (c == ')') {
-                std::cout << "Word: " << str << std::endl;
                 str = "";
                 continue;
             }
 
             else if (c == '"') {
-                std::cout << "Word: " << str << std::endl;
-
                 ParseResult result = ParseString(i, endPosition, input);
                 i = result.Pos+1;
                 currentPos = result.Pos+1;
@@ -397,8 +384,6 @@ namespace Hunter::Compiler {
 
             // parse identifier
             else if (isalpha(c) && str.empty()) {
-                std::cout << "Word: " << str << std::endl;
-
                 ParseResult result = ParseIdentifier(i-1, input.length(), input);
                 i = result.Pos;
                 currentPos = result.Pos;
@@ -410,8 +395,6 @@ namespace Hunter::Compiler {
 
             // parse number
             else if ((isnumber(c) || c == '-') && str.empty()) {
-                std::cout << "Word: " << str << std::endl;
-
                 ParseResult result = ParseInt(i-1, endPosition, input);
                 i = result.Pos+1;
                 currentPos = result.Pos+1;
@@ -462,8 +445,6 @@ namespace Hunter::Compiler {
                     str.push_back(c);
                     continue;
                 }
-
-                COMPILER_INFO("Current expr: {0}", str);
 
                 ParseResult result;
 
@@ -522,7 +503,6 @@ namespace Hunter::Compiler {
         }
 
         if (!str.empty()) {
-            std::cout << "Current expr: " << str << std::endl;
             ParseResult result = ParseExpression(-1, str.length(), str);
 
             if (!result.Expr) {
@@ -640,7 +620,6 @@ namespace Hunter::Compiler {
 
             else if (isParametersParsing && (c == ',' || c == ')')) {
                 if (!parameter.empty()) {
-                    std::cout << "Parameter: " << parameter << std::endl;
                     auto index = parameter.find(':');
 
                     if (index > parameter.length()) {
@@ -704,8 +683,6 @@ namespace Hunter::Compiler {
             char c = input.at(i);
 
             if (isspace(c)) {
-                std::cout << str << std::endl;
-
                 if (str != "then") {
                     expressionStr += str + " ";
                 }
@@ -747,8 +724,6 @@ namespace Hunter::Compiler {
             char c = input.at(i);
 
             if (isspace(c) && !str.empty()) {
-
-                std::cout << "part: " << currentParsingPart << " " << str << std::endl;
 
                 if (currentParsingPart == 1) {
                     counterIdentifier = str;
@@ -794,8 +769,6 @@ namespace Hunter::Compiler {
             range = result.Expr;
         }
 
-        std::cout << str << std::endl;
-
         return {
             .Pos = currentPos,
             .Expr = new ForLoopExpression(counterIdentifier, range)
@@ -811,8 +784,6 @@ namespace Hunter::Compiler {
         for (int i = currentPos+1; i < endPosition; ++i, currentPos++) {
             char c = input.at(i);
             if (c == '.') {
-
-                std::cout << "Nr: " << c << " -> " << str << std::endl;
 
                 if (!str.empty()) {
                     if (start == -1) {
@@ -1042,7 +1013,6 @@ namespace Hunter::Compiler {
             if (isspace(c) || c == ',' || c == '(' || c == ')') {
                 isParsingParameter = false;
                 if (!str.empty()) {
-                    std::cout << str << std::endl;
                     ParseResult result;
 
                     if (str.starts_with("\"")) {

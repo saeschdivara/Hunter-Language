@@ -30,7 +30,9 @@ int main(int argc, const char ** argv) {
 
     std::string filePath = std::string(argv[1]);
     Hunter::Compiler::AbstractSyntaxTree * ast = parser.Parse(filePath);
-    importResolver.ResolveImports(std::filesystem::path(filePath).parent_path(), ast);
+    std::vector<Hunter::Compiler::Expression *> emptyInstructionList;
+    importResolver.ResolveImports(std::filesystem::path(filePath).parent_path(), ast, emptyInstructionList);
+    ast->SetInstructions(emptyInstructionList);
 
     ast->Dump();
 

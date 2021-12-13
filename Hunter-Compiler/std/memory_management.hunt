@@ -1,0 +1,5 @@
+mod memory_management
+
+extern fun malloc(allocation_size: i64) : memory
+extern fun memset(data: memory, value: i64, memory_size: i64)
+extern fun free(data: memory)

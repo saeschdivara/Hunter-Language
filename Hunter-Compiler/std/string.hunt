@@ -1,0 +1,7 @@
+mod string
+
+import std.memory_management
+
+struct String
+  str: memory
+  length: i64
