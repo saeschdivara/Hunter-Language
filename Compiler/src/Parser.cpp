@@ -780,6 +780,7 @@ namespace Hunter::Compiler {
         std::string str;
         int64_t start = -1;
         int64_t end = -1;
+        IdentifierExpression * variable = nullptr;
 
         for (int i = currentPos+1; i < endPosition; ++i, currentPos++) {
             char c = input.at(i);
@@ -796,22 +797,32 @@ namespace Hunter::Compiler {
                 str = "";
                 continue;
             } else if (!isnumber(c)) {
-                std::cerr << "Found not a number in range: " << c << std::endl;
-                exit(1);
+                ParseResult result = ParseIdentifier(i-1, endPosition, input);
+                variable = dynamic_cast<IdentifierExpression *>(result.Expr);
+                i = result.Pos+1;
+                currentPos = result.Pos+1;
             }
 
             str.push_back(c);
         }
 
-        if (!str.empty()) {
+        if (!str.empty() && !variable) {
             if (end == -1) {
                 end = std::stoll(str);
             }
         }
 
+        Expression * resultExpr = nullptr;
+
+        if (!variable) {
+            resultExpr = new RangeExpression(variable);
+        } else {
+            resultExpr = new RangeExpression(start, end);
+        }
+
         return {
             .Pos = currentPos,
-            .Expr = new RangeExpression(start, end)
+            .Expr = resultExpr
         };
     }
 
