@@ -100,7 +100,7 @@ TEST_CASE( "Simple instructions are parsed", "[parser]" ) {
 
         auto * parameter = parameters.at(0);
         REQUIRE( parameter->GetName() == "num" );
-        REQUIRE( parameter->GetDataType() == DataType::i8 );
+        REQUIRE(parameter->GetDataType() == DataTypeId::i8 );
     }
 
     SECTION("function declaration without parameter instruction") {

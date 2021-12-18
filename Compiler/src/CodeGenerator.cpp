@@ -17,41 +17,41 @@
 
 namespace Hunter::Compiler {
 
-    llvm::Type *GetTypeFromDataType(llvm::IRBuilder<> *builder, DataType dataType) {
+    llvm::Type *GetTypeFromDataType(llvm::IRBuilder<> *builder, DataTypeId dataType) {
         switch (dataType) {
-            case DataType::Void:
+            case DataTypeId::Void:
                 return builder->getVoidTy();
-            case DataType::Memory:
+            case DataTypeId::Memory:
                 return llvm::PointerType::get(builder->getVoidTy(), 0);
-            case DataType::String:
+            case DataTypeId::String:
                 return builder->getInt8PtrTy();
-            case DataType::i8:
+            case DataTypeId::i8:
                 return builder->getInt8Ty();
-            case DataType::i16:
+            case DataTypeId::i16:
                 return builder->getInt16Ty();
-            case DataType::i32:
+            case DataTypeId::i32:
                 return builder->getInt32Ty();
-            case DataType::i64:
+            case DataTypeId::i64:
                 return builder->getInt64Ty();
         }
     }
 
-    std::string GetFormatPlaceholderFromDataType(DataType dataType) {
+    std::string GetFormatPlaceholderFromDataType(DataTypeId dataType) {
         switch (dataType) {
-            case DataType::Void: {
+            case DataTypeId::Void: {
                 COMPILER_ERROR("Unknown data type has no format string");
                 exit(1);
             }
-            case DataType::Memory: {
+            case DataTypeId::Memory: {
                 return "%s";
             }
-            case DataType::String:
+            case DataTypeId::String:
                 return "%s";
-            case DataType::i8:
-            case DataType::i16:
-            case DataType::i32:
+            case DataTypeId::i8:
+            case DataTypeId::i16:
+            case DataTypeId::i32:
                 return "%d";
-            case DataType::i64:
+            case DataTypeId::i64:
                 return "%lld";
         }
     }
@@ -172,7 +172,7 @@ namespace Hunter::Compiler {
                 parameterDescriptions.push_back(GetTypeFromDataType(builder, parameter->GetDataType()));
             }
 
-            DataType returnType = funcExpr->GetReturnType();
+            DataTypeId returnType = funcExpr->GetReturnType();
             auto *simpleFuncType = llvm::FunctionType::get(GetTypeFromDataType(builder, returnType), parameterDescriptions, false);
 
             currentFunction = llvm::Function::Create(
@@ -432,14 +432,14 @@ namespace Hunter::Compiler {
                         }
                     } else if (auto *parameterExpr = dynamic_cast<ParameterExpression *>(variableExpr)) {
                         auto parameterType = parameterExpr->GetDataType();
-                        if (parameterType == DataType::String) {
+                        if (parameterType == DataTypeId::String) {
                             ops.push_back(builder->CreateLoad(builder->getInt8PtrTy(), m_Variables[variableName]));
                             formatString += "%s";
                         } else if (
-                                parameterType == DataType::i8 ||
-                                parameterType == DataType::i16 ||
-                                parameterType == DataType::i32 ||
-                                parameterType == DataType::i64
+                                parameterType == DataTypeId::i8 ||
+                                parameterType == DataTypeId::i16 ||
+                                parameterType == DataTypeId::i32 ||
+                                parameterType == DataTypeId::i64
                         ) {
                             auto type = static_cast<IntType>(parameterType);
                             auto *loadExpr = builder->CreateLoad(GetTypeFromDataType(builder, parameterType),
@@ -576,7 +576,7 @@ namespace Hunter::Compiler {
                 exit(1);
             }
 
-            DataType returnType = func->GetReturnType();
+            DataTypeId returnType = func->GetReturnType();
             auto *var = builder->CreateAlloca(GetTypeFromDataType(builder, returnType), nullptr, variableName);
             m_DebugGenerator->DefineVariable(builder, var, constExpr);
 
@@ -662,19 +662,19 @@ namespace Hunter::Compiler {
         return var;
     }
 
-    DataType CodeGenerator::GetVariableDeclarationType(VariableDeclarationExpression *expr) {
-        DataType type = expr->GetVariableType();
+    DataTypeId CodeGenerator::GetVariableDeclarationType(VariableDeclarationExpression *expr) {
+        DataTypeId type = expr->GetVariableType();
 
-        if (type != DataType::Unknown) {
+        if (type != DataTypeId::Unknown) {
             return type;
         }
 
         auto * value = expr->GetValue();
 
         if (dynamic_cast<StringExpression *>(value)) {
-            return DataType::String;
+            return DataTypeId::String;
         } else if (auto *intExpr = dynamic_cast<IntExpression *>(value)) {
-            return static_cast<DataType>(GetTypeFromValue(intExpr->GetValue()));
+            return static_cast<DataTypeId>(GetTypeFromValue(intExpr->GetValue()));
         } else if (auto *funcCallExpr = dynamic_cast<FunctionCallExpression *>(value)) {
             auto * funcDef = m_FunctionsDefinitions[funcCallExpr->GetFunctionName()];
             return funcDef->GetReturnType();

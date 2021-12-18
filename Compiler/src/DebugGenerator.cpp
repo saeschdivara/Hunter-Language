@@ -103,26 +103,26 @@ namespace Hunter::Compiler::Debug {
         m_DebugInfoBuilder->finalize();
     }
 
-    llvm::DIType *DebugGenerator::GetDebugDatatype(DataType dataType) {
+    llvm::DIType *DebugGenerator::GetDebugDatatype(DataTypeId dataType) {
         switch (dataType) {
-            case DataType::i8:
+            case DataTypeId::i8:
                 return m_DebugInfoBuilder->createBasicType("int", 8, 0);
-            case DataType::i16:
+            case DataTypeId::i16:
                 return m_DebugInfoBuilder->createBasicType("int", 16, 0);
-            case DataType::i32:
+            case DataTypeId::i32:
                 return m_DebugInfoBuilder->createBasicType("int", 32, 0);
-            case DataType::i64:
+            case DataTypeId::i64:
                 return m_DebugInfoBuilder->createBasicType("int", 64, 0);
-            case DataType::String: {
+            case DataTypeId::String: {
                 auto * charType = m_DebugInfoBuilder->createBasicType("char", 8, 0);
                 return m_DebugInfoBuilder->createPointerType(charType, 64);
             }
-            case DataType::Memory:
+            case DataTypeId::Memory:
                 return m_DebugInfoBuilder->createPointerType(
                     m_DebugInfoBuilder->createBasicType("void", 64, 0),
                     64
                 );
-            case DataType::Void:
+            case DataTypeId::Void:
                 return m_DebugInfoBuilder->createBasicType("void", 64, 0);
         }
     }

@@ -5,32 +5,13 @@
 #include <vector>
 #include <iostream>
 
+#include "DataType.h"
 #include "DebugData.h"
 
 namespace Hunter::Compiler {
 
-    enum class IntType {
-        i8 = 8,
-        i16 = 16,
-        i32 = 32,
-        i64 = 64
-    };
-
-    enum class DataType {
-        Void = 0,
-        String  = 1,
-        Memory  = 2,
-        Struct  = 3,
-        i8      = static_cast<int>(IntType::i8),
-        i16     = static_cast<int>(IntType::i16),
-        i32     = static_cast<int>(IntType::i32),
-        i64     = static_cast<int>(IntType::i64),
-
-        Unknown = 999,
-    };
-
-    DataType GetDataTypeFromString(const std::string & typeStr);
-    std::string GetDataTypeString(DataType dataType);
+    DataTypeId GetDataTypeFromString(const std::string & typeStr);
+    std::string GetDataTypeString(DataTypeId dataType);
 
     IntType GetTypeFromValue(int64_t val);
 
@@ -79,7 +60,7 @@ namespace Hunter::Compiler {
         Hunter::Parser::Debug::DebugData * m_DebugData;
     };
 
-    DataType GetDataTypeFromExpression(Expression * expr);
+    DataTypeId GetDataTypeFromExpression(Expression * expr);
 
     class ImportExpression : public Expression {
     public:
@@ -204,23 +185,23 @@ namespace Hunter::Compiler {
 
     class VariableDeclarationExpression : public Expression {
     public:
-        VariableDeclarationExpression(std::string name, Expression * value) : m_VariableName(std::move(name)), m_Type(DataType::Unknown), m_Value(value) {}
-        VariableDeclarationExpression(std::string name, DataType type) :
+        VariableDeclarationExpression(std::string name, Expression * value) : m_VariableName(std::move(name)), m_Type(DataTypeId::Unknown), m_Value(value) {}
+        VariableDeclarationExpression(std::string name, DataTypeId type) :
             m_VariableName(std::move(name)), m_Type(type), m_Value(nullptr) {}
         std::string & GetVariableName() { return m_VariableName; }
         Expression * GetValue() { return m_Value; }
 
-        DataType GetVariableType();
+        DataTypeId GetVariableType();
 
     private:
         std::string m_VariableName;
         Expression * m_Value;
-        DataType m_Type;
+        DataTypeId m_Type;
     };
 
     class PropertyDeclarationExpression : public VariableDeclarationExpression {
     public:
-        PropertyDeclarationExpression(std::string name, DataType type) : VariableDeclarationExpression(std::move(name), type) {}
+        PropertyDeclarationExpression(std::string name, DataTypeId type) : VariableDeclarationExpression(std::move(name), type) {}
 
         const char *GetClassName() override {
             return "PropertyDeclarationExpression";
@@ -510,11 +491,11 @@ namespace Hunter::Compiler {
 
     class ParameterExpression : public Expression {
     public:
-        ParameterExpression(std::string name, DataType dataType) : m_Name(std::move(name)), m_DataType(dataType) {}
+        ParameterExpression(std::string name, DataTypeId dataType) : m_Name(std::move(name)), m_DataType(dataType) {}
 
         std::string & GetName() { return m_Name; }
 
-        DataType GetDataType() const {
+        DataTypeId GetDataType() const {
             return m_DataType;
         }
 
@@ -529,7 +510,7 @@ namespace Hunter::Compiler {
 
     private:
         std::string m_Name;
-        DataType m_DataType;
+        DataTypeId m_DataType;
     };
 
     class FunctionExpression : public BlockExpression {
@@ -544,11 +525,11 @@ namespace Hunter::Compiler {
             return m_Parameters;
         }
 
-        DataType GetReturnType() const {
+        DataTypeId GetReturnType() const {
             return m_ReturnType;
         }
 
-        void SetReturnType(DataType returnType) {
+        void SetReturnType(DataTypeId returnType) {
             m_ReturnType = returnType;
         }
 
@@ -586,14 +567,14 @@ namespace Hunter::Compiler {
         bool m_IsExternal = false;
         std::string m_Name;
         std::vector<ParameterExpression *> m_Parameters;
-        DataType m_ReturnType = DataType::Void;
+        DataTypeId m_ReturnType = DataTypeId::Void;
     };
 
     class ListExpression : public Expression {
     public:
-        ListExpression(DataType dataType) : m_DataType(dataType) {}
+        ListExpression(DataTypeId dataType) : m_DataType(dataType) {}
 
-        DataType GetDataType() const {
+        DataTypeId GetDataType() const {
             return m_DataType;
         }
 
@@ -621,7 +602,7 @@ namespace Hunter::Compiler {
         }
 
     private:
-        DataType m_DataType;
+        DataTypeId m_DataType;
         std::vector<Expression *> m_Elements;
     };
 

@@ -3,45 +3,45 @@
 
 namespace Hunter::Compiler {
 
-    DataType GetDataTypeFromString(const std::string &typeStr) {
+    DataTypeId GetDataTypeFromString(const std::string &typeStr) {
         if (typeStr == "string") {
-            return DataType::String;
+            return DataTypeId::String;
         }
         else if (typeStr == "memory") {
-            return DataType::Memory;
+            return DataTypeId::Memory;
         }
         else if (typeStr == "i8") {
-            return DataType::i8;
+            return DataTypeId::i8;
         }
         else if (typeStr == "i16") {
-            return DataType::i16;
+            return DataTypeId::i16;
         }
         else if (typeStr == "i32") {
-            return DataType::i32;
+            return DataTypeId::i32;
         }
         else if (typeStr == "i64") {
-            return DataType::i64;
+            return DataTypeId::i64;
         }
         else {
-            return DataType::Void;
+            return DataTypeId::Void;
         }
     }
 
-    std::string GetDataTypeString(DataType dataType) {
+    std::string GetDataTypeString(DataTypeId dataType) {
         switch (dataType) {
-            case DataType::i8:
+            case DataTypeId::i8:
                 return "i8";
-            case DataType::i16:
+            case DataTypeId::i16:
                 return "i16";
-            case DataType::i32:
+            case DataTypeId::i32:
                 return "i32";
-            case DataType::i64:
+            case DataTypeId::i64:
                 return "i64";
-            case DataType::String:
+            case DataTypeId::String:
                 return "String";
-            case DataType::Memory:
+            case DataTypeId::Memory:
                 return "Memory";
-            case DataType::Void:
+            case DataTypeId::Void:
                 return "Void";
         }
     }
@@ -178,16 +178,16 @@ namespace Hunter::Compiler {
         }
     }
 
-    DataType GetDataTypeFromExpression(Expression *expr) {
+    DataTypeId GetDataTypeFromExpression(Expression *expr) {
 
         if (dynamic_cast<StringExpression *>(expr)) {
-            return DataType::String;
+            return DataTypeId::String;
         }
 
-        return DataType::Unknown;
+        return DataTypeId::Unknown;
     }
 
-    DataType VariableDeclarationExpression::GetVariableType() {
+    DataTypeId VariableDeclarationExpression::GetVariableType() {
         return m_Type;
     }
 

@@ -35,7 +35,7 @@ namespace Hunter::Compiler {
     public:
         llvm::Module * GenerateCode(AbstractSyntaxTree * ast);
 
-        DataType GetVariableDeclarationType(VariableDeclarationExpression * expr);
+        DataTypeId GetVariableDeclarationType(VariableDeclarationExpression * expr);
 
         void SetDebugOutputFile(const std::string & outputFileName) { m_DebugOutputFileName = outputFileName; }
 

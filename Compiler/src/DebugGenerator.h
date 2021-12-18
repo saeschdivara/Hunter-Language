@@ -34,7 +34,7 @@ namespace Hunter::Compiler::Debug {
         void Generate();
 
     private:
-        llvm::DIType * GetDebugDatatype(DataType dataType);
+        llvm::DIType * GetDebugDatatype(DataTypeId dataType);
         llvm::DISubroutineType * GetFunctionType(FunctionExpression * expr);
 
         llvm::DIBuilder * m_DebugInfoBuilder = nullptr;
