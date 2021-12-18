@@ -1,0 +1,9 @@
+fun show_list_elements(l: list<string>)
+  print("Elements:")
+
+  for element in l
+    print(l, "\n")
+
+fun hunt()
+  const my_list = ["Element 1", "Element 2", "Element 3"]
+  show_list_elements(my_list)

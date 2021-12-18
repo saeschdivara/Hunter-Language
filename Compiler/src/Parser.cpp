@@ -342,9 +342,38 @@ namespace Hunter::Compiler {
             char c = input.at(i);
 
             if (isspace(c)) {
-                COMPILER_INFO("Word: {0}", str);
+                if (!str.empty()) {
+                    COMPILER_INFO("Word: {0}", str);
+                }
 
                 str = "";
+                continue;
+            }
+
+            else if (c == '[') {
+
+                std::string listElementsStr = input.substr(1, input.size()-2);
+                std::vector<std::string> listElements;
+                split(listElementsStr, ',', listElements);
+
+                for (const auto &element : listElements) {
+                    ParseResult result = ParseExpression(-1, element.size(), element);
+
+                    if (!result.Expr) {
+                        COMPILER_ERROR("Could not parse list element: {0}", element);
+                        exit(1);
+                    }
+
+                    if (!expr) {
+                        expr = new ListExpression(GetDataTypeFromExpression(result.Expr));
+                    }
+
+                    dynamic_cast<ListExpression *>(expr)->AddElement(result.Expr);
+                }
+
+                currentPos = endPosition;
+                i = endPosition;
+
                 continue;
             }
 
@@ -440,6 +469,11 @@ namespace Hunter::Compiler {
             char c = input.at(i);
 
             if (isspace(c) && !str.empty()) {
+
+                if (str.at(0) == '[' && str.at(str.length()-1) != ']') {
+                    str.push_back(c);
+                    continue;
+                }
 
                 if (str.at(0) == '"' && str.at(str.length()-1) != '"') {
                     str.push_back(c);
@@ -814,7 +848,7 @@ namespace Hunter::Compiler {
 
         Expression * resultExpr = nullptr;
 
-        if (!variable) {
+        if (variable) {
             resultExpr = new RangeExpression(variable);
         } else {
             resultExpr = new RangeExpression(start, end);
@@ -959,7 +993,7 @@ namespace Hunter::Compiler {
         }
 
         if (!value) {
-            COMPILER_ERROR("Could not parse variable value");
+            COMPILER_ERROR("Could not parse variable value: {0}", input);
             exit(1);
         }
 

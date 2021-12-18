@@ -79,6 +79,8 @@ namespace Hunter::Compiler {
         Hunter::Parser::Debug::DebugData * m_DebugData;
     };
 
+    DataType GetDataTypeFromExpression(Expression * expr);
+
     class ImportExpression : public Expression {
     public:
         ImportExpression(std::string module) : m_Module(std::move(module)) {}
@@ -587,9 +589,47 @@ namespace Hunter::Compiler {
         DataType m_ReturnType = DataType::Void;
     };
 
+    class ListExpression : public Expression {
+    public:
+        ListExpression(DataType dataType) : m_DataType(dataType) {}
+
+        DataType GetDataType() const {
+            return m_DataType;
+        }
+
+        const std::vector<Expression *> &GetElements() const {
+            return m_Elements;
+        }
+
+        void AddElement(Expression * expr) {
+            m_Elements.push_back(expr);
+        }
+
+        const char *GetClassName() override {
+            return "ListExpression";
+        }
+
+        void Dump(int level) override {
+            DumpSpaces(level);
+            std::cout << "List Expression: " << " (" << GetDataTypeString(GetDataType()) << ")" << std::endl;
+
+            DumpSpaces(level);
+            std::cout << "Elements:" << std::endl;
+            for (const auto &element : m_Elements) {
+                element->Dump(level+1);
+            }
+        }
+
+    private:
+        DataType m_DataType;
+        std::vector<Expression *> m_Elements;
+    };
+
     class RangeExpression : public Expression {
     public:
-        RangeExpression(int64_t start, int64_t end) : m_Start(start), m_End(end) {}
+        RangeExpression(int64_t start, int64_t end) : m_Start(start), m_End(end), m_Variable(nullptr) {}
+        RangeExpression(IdentifierExpression * variable) :  m_Start(-1), m_End(-1), m_Variable(variable) {}
+
         int64_t GetStart() const { return m_Start; }
         int64_t GetEnd() const { return m_End; }
 
@@ -599,12 +639,18 @@ namespace Hunter::Compiler {
 
         void Dump(int level) override {
             DumpSpaces(level);
-            std::cout << "Range Expression: " << GetStart() << " - " << GetEnd() << std::endl;
+            if (!m_Variable) {
+                std::cout << "Range Expression: " << GetStart() << " - " << GetEnd() << std::endl;
+            } else {
+                std::cout << "Range Expression: " << std::endl;
+                m_Variable->Dump(level+1);
+            }
         }
 
     private:
-        int64_t m_Start;
-        int64_t m_End;
+        int64_t m_Start = -1;
+        int64_t m_End = -1;
+        IdentifierExpression * m_Variable = nullptr;
     };
 
     class ElseExpression : public BlockExpression {

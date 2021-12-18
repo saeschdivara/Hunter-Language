@@ -178,6 +178,15 @@ namespace Hunter::Compiler {
         }
     }
 
+    DataType GetDataTypeFromExpression(Expression *expr) {
+
+        if (dynamic_cast<StringExpression *>(expr)) {
+            return DataType::String;
+        }
+
+        return DataType::Unknown;
+    }
+
     DataType VariableDeclarationExpression::GetVariableType() {
         return m_Type;
     }

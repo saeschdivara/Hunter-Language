@@ -41,52 +41,6 @@ namespace Hunter::Compiler {
                 }
             }
         }
-
-
-//        for (int i = 0; i < instructions.size(); ++i) {
-//            Expression * instruction = instructions.at(i);
-//
-//            if (auto * importExpr = dynamic_cast<ImportExpression *>(instruction)) {
-//                instructions.erase(instructions.begin() + i);
-//
-//                std::string module = importExpr->GetModule();
-//                COMPILER_INFO("Found module import: \"{0}\"", module);
-//
-//                if (tree->HasModule(module)) {
-//                    continue;
-//                }
-//
-//                tree->AddModule(module);
-//
-//                replaceAll(module, ".", "/");
-//                std::string moduleFilePath = basePath + "/" + module + ".hunt";
-//
-//                Parser parser;
-//                AbstractSyntaxTree * ast = parser.Parse(moduleFilePath);
-//                auto & importedInstructions = ast->GetInstructions();
-//
-//                auto * moduleInstr = dynamic_cast<ModuleExpression *>(importedInstructions.at(0));
-//                if (!moduleInstr) {
-//                    std::cerr << "First instruction is not the module" << std::endl;
-//                    exit(1);
-//                }
-//
-//                auto storedModuleName = moduleInstr->GetModule();
-//
-//                for (int j = 0; j < importedInstructions.size(); ++j) {
-//                    auto * importedInstr = importedInstructions.at(j);
-//                    if (auto * funcExpr = dynamic_cast<FunctionExpression *>(importedInstr)) {
-//                        funcExpr->SetName(storedModuleName + "." + funcExpr->GetName());
-//                    } else if (dynamic_cast<ImportExpression *>(importedInstr)) {
-//                        ResolveImports(basePath, tree, ast->GetInstructions());
-//                    }
-//
-//                    // todo: support function calls of the module function in its own functions
-//                }
-//
-//                instructions.insert(instructions.begin(), importedInstructions.begin()+1, importedInstructions.end());
-//            }
-//        }
     }
 
 }
