@@ -41,8 +41,15 @@ namespace Hunter::Compiler {
                 return "String";
             case DataTypeId::Memory:
                 return "Memory";
+            case DataTypeId::List:
+                return "List";
+            case DataTypeId::Struct:
+                return "Struct";
             case DataTypeId::Void:
                 return "Void";
+            default:
+                COMPILER_ERROR("Unknown data type found: {0}", dataType);
+                exit(1);
         }
     }
 

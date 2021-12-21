@@ -74,6 +74,7 @@ namespace Hunter::Compiler {
         std::string m_DataStr;
         Expression * m_CurrentExpression = nullptr;
         std::stack<Expression *> m_BlockExpressions;
+        std::stack<int> m_BlockLevels;
 
         bool m_IsParsingBlock = false;
         bool m_IsFullLineComment = false;

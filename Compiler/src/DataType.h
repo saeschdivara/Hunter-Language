@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 namespace Hunter::Compiler {
 
     enum class IntType {
@@ -28,13 +30,21 @@ namespace Hunter::Compiler {
     class DataType {
     public:
         explicit DataType(const DataTypeId id) : m_TypeId(id) {}
+        DataType(const DataTypeId id, DataType * templateType) : m_TypeId(id), m_TemplateType(templateType) {}
 
         [[nodiscard]] DataTypeId GetId() const {
             return m_TypeId;
         }
 
+        DataType *GetTemplateType() const {
+            return m_TemplateType;
+        }
+
+        static DataType * FromString(const std::string & typeStr);
+
     private:
         DataTypeId m_TypeId;
+        DataType * m_TemplateType;
     };
 
 }

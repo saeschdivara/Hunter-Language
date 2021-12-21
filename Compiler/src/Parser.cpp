@@ -70,6 +70,8 @@ namespace Hunter::Compiler {
 
                 if (auto * elseExpr = dynamic_cast<ElseExpression *>(m_CurrentExpression)) {
                     m_BlockExpressions.pop();
+                    m_BlockLevels.pop();
+
                     ifExpr->SetElse(elseExpr);
                 } else {
                     ifExpr->AddExpression(m_CurrentExpression);
@@ -82,6 +84,7 @@ namespace Hunter::Compiler {
             if (m_CurrentExpression->HasBlock()) {
 
                 m_BlockExpressions.push(m_CurrentExpression);
+                m_BlockLevels.push(m_CurrentLevel);
                 m_IsParsingBlock = true;
             }
         } else {
@@ -89,6 +92,7 @@ namespace Hunter::Compiler {
 
             if (m_CurrentExpression->HasBlock()) {
                 m_BlockExpressions.push(m_CurrentExpression);
+                m_BlockLevels.push(m_CurrentLevel);
                 m_IsParsingBlock = true;
             }
         }
@@ -123,12 +127,12 @@ namespace Hunter::Compiler {
                 continue;
             } else if (!isspace(c) && isLevelParsing) {
                 isLevelParsing = false;
+                m_CurrentLevel = level;
 
-                if (level <= m_CurrentLevel) {
-                    m_CurrentLevel = level;
-
-                    if (!m_BlockExpressions.empty()) {
+                if (!m_BlockLevels.empty()) {
+                    while (!m_BlockLevels.empty() && m_CurrentLevel <= m_BlockLevels.top()) {
                         m_BlockExpressions.pop();
+                        m_BlockLevels.pop();
                     }
 
                     if (m_BlockExpressions.empty()) {
@@ -665,7 +669,7 @@ namespace Hunter::Compiler {
                     std::string parameterType = parameter.substr(index+1, parameter.size());
 
                     parametersList.push_back(
-                            new ParameterExpression(parameterName, GetDataTypeFromString(parameterType))
+                        new ParameterExpression(parameterName, DataType::FromString(parameterType))
                     );
 
                     parameter = "";

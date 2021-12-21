@@ -122,8 +122,13 @@ namespace Hunter::Compiler::Debug {
                     m_DebugInfoBuilder->createBasicType("void", 64, 0),
                     64
                 );
+//            case DataTypeId::List:
+//                return m_DebugInfoBuilder->createPointerType(m_Structs["list"], 64);
             case DataTypeId::Void:
                 return m_DebugInfoBuilder->createBasicType("void", 64, 0);
+//            default:
+//                COMPILER_ERROR("Unhandled data type: {0}", dataType);
+//                exit(1);
         }
     }
 
@@ -134,7 +139,7 @@ namespace Hunter::Compiler::Debug {
         routineTypes.push_back(GetDebugDatatype(expr->GetReturnType()));
 
         for (const auto &parameter : expr->GetParameters()) {
-            routineTypes.push_back(GetDebugDatatype(parameter->GetDataType()));
+            routineTypes.push_back(GetDebugDatatype(parameter->GetDataType()->GetId()));
         }
 
         return m_DebugInfoBuilder->createSubroutineType(

@@ -20,7 +20,7 @@ add_executable(Hunter_Compiler
         src/utils/logger.h src/utils/logger.cpp
         src/DebugData.cpp src/DebugData.h
         src/DebugGenerator.cpp src/DebugGenerator.h
-        src/DataType.cpp src/DataType.h)
+        src/DataType.cpp src/DataType.h src/BuiltinFeatureGenerator.cpp src/BuiltinFeatureGenerator.h)
 
 llvm_map_components_to_libnames(llvm_libraries analysis support core object target  irreader executionengine scalaropts instcombine orcjit runtimedyld)
 

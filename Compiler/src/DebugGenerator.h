@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Expressions.h"
+
+#include <unordered_map>
+
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/DIBuilder.h>
 
@@ -40,6 +43,8 @@ namespace Hunter::Compiler::Debug {
         llvm::DIBuilder * m_DebugInfoBuilder = nullptr;
         llvm::DICompileUnit * m_CompileUnit;
         std::vector<llvm::DIScope *> m_LexicalBlocks;
+
+        std::unordered_map<std::string, llvm::DICompositeType *> m_Structs;
 
         Hunter::Compiler::CodeGenerator * m_CodeGenerator;
     };

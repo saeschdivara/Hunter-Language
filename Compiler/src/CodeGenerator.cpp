@@ -1,6 +1,7 @@
 #include "CodeGenerator.h"
 #include "Parser.h"
 #include "Expressions.h"
+#include "BuiltinFeatureGenerator.h"
 #include "utils/logger.h"
 
 #include <iostream>
@@ -17,7 +18,7 @@
 
 namespace Hunter::Compiler {
 
-    llvm::Type *GetTypeFromDataType(llvm::IRBuilder<> *builder, DataTypeId dataType) {
+    llvm::Type * CodeGenerator::GetTypeFromDataType(llvm::IRBuilder<> *builder, DataTypeId dataType) {
         switch (dataType) {
             case DataTypeId::Void:
                 return builder->getVoidTy();
@@ -33,6 +34,11 @@ namespace Hunter::Compiler {
                 return builder->getInt32Ty();
             case DataTypeId::i64:
                 return builder->getInt64Ty();
+            case DataTypeId::List:
+                return llvm::PointerType::get(m_Structs["list"], 0);
+            default:
+                COMPILER_ERROR("Unhandled data type: {0}", dataType);
+                exit(1);
         }
     }
 
@@ -53,8 +59,13 @@ namespace Hunter::Compiler {
                 return "%d";
             case DataTypeId::i64:
                 return "%lld";
+            default:
+                COMPILER_ERROR("Unhandled data type: {0}", dataType);
+                exit(1);
         }
     }
+
+    CodeGenerator::CodeGenerator() : m_BuiltinGenerator(new BuiltinFeatureGenerator(this)) {}
 
     llvm::Module *CodeGenerator::GenerateCode(AbstractSyntaxTree *ast) {
 
@@ -71,6 +82,8 @@ namespace Hunter::Compiler {
 
         llvm::BasicBlock *entryBlock = llvm::BasicBlock::Create(m_Context, "EntryBlock", hunterFunction);
         auto *builder = new llvm::IRBuilder<>(entryBlock);
+
+        m_BuiltinGenerator->GenerateBuiltinFeatures(builder);
 
         for (const auto &instr : ast->GetInstructions()) {
             if (!m_DebugGenerator) {
@@ -169,7 +182,7 @@ namespace Hunter::Compiler {
             std::vector<llvm::Type *> parameterDescriptions;
 
             for (const auto &parameter : funcExpr->GetParameters()) {
-                parameterDescriptions.push_back(GetTypeFromDataType(builder, parameter->GetDataType()));
+                parameterDescriptions.push_back(GetTypeFromDataType(builder, parameter->GetDataType()->GetId()));
             }
 
             DataTypeId returnType = funcExpr->GetReturnType();
@@ -191,7 +204,7 @@ namespace Hunter::Compiler {
             m_Functions[functionName] = currentFunction;
             m_FunctionsDefinitions[functionName] = funcExpr;
 
-            m_DebugGenerator->DefineFunction(currentFunction, funcExpr);
+//            m_DebugGenerator->DefineFunction(currentFunction, funcExpr);
 
             if (funcExpr->IsExternal()) {
                 return;
@@ -214,7 +227,7 @@ namespace Hunter::Compiler {
             }
 
             llvm::Value *variable = funcBlockBuilder.CreateAlloca(
-                GetTypeFromDataType(&funcBlockBuilder, parameter->GetDataType()),
+                GetTypeFromDataType(&funcBlockBuilder, parameter->GetDataType()->GetId()),
                 nullptr,
                 parameterName
             );
@@ -431,7 +444,7 @@ namespace Hunter::Compiler {
                             formatString += "%d";
                         }
                     } else if (auto *parameterExpr = dynamic_cast<ParameterExpression *>(variableExpr)) {
-                        auto parameterType = parameterExpr->GetDataType();
+                        auto parameterType = parameterExpr->GetDataType()->GetId();
                         if (parameterType == DataTypeId::String) {
                             ops.push_back(builder->CreateLoad(builder->getInt8PtrTy(), m_Variables[variableName]));
                             formatString += "%s";
@@ -451,6 +464,13 @@ namespace Hunter::Compiler {
                             } else {
                                 formatString += "%d";
                             }
+                        } else {
+                            COMPILER_ERROR(
+                                "Parameter {0} with type {1} not supported for print",
+                                variableName,
+                                GetDataTypeString(parameterType)
+                           );
+                            exit(1);
                         }
                     } else if (auto * funcCallExpr = dynamic_cast<FunctionCallExpression *>(variableExpr)) {
                         auto * funcDef = m_FunctionsDefinitions[funcCallExpr->GetFunctionName()];
@@ -618,6 +638,50 @@ namespace Hunter::Compiler {
 
                 builder->CreateStore(GetValueFromExpression(builder, attribute->GetValue()), attributePointer);
             }
+
+        } else if (auto *listConstrExpr = dynamic_cast<ListExpression *>(value)) {
+
+            // todo: optimize this so not everything has to be written here
+            llvm::StructType * structType = m_Structs["list"];
+            llvm::Type * structPointerType = llvm::PointerType::get(structType, 0);
+            auto *var = builder->CreateAlloca(structPointerType, nullptr, variableName);
+
+            m_Variables[variableName] = var;
+            m_VariablesExpression[variableName] = value;
+
+            // allocate list structure
+            std::vector<llvm::Value *> ops;
+            auto dataLayout = m_Module->getDataLayout();
+            ops.push_back(builder->getInt64(dataLayout.getStructLayout(structType)->getSizeInBytes()));
+
+            auto * structData = builder->CreateCall(GetCLibraryFunction("malloc"), llvm::ArrayRef(ops));
+            auto * value = builder->CreateBitCast(structData, structPointerType);
+            builder->CreateStore(value, var);
+
+            // store list size
+            auto * elementsNumberPointer = builder->CreateStructGEP(structType, value,0);
+            builder->CreateStore(builder->getInt64(listConstrExpr->GetElements().size()), elementsNumberPointer);
+
+            // allocate static list data space
+            std::vector<llvm::Value *> ops2;
+            ops.push_back(builder->getInt64(dataLayout.getPointerTypeSize(GetTypeFromDataType(builder, listConstrExpr->GetDataType()))));
+
+            auto * listDataType = llvm::PointerType::get(builder->getInt8PtrTy(), 0);
+            auto * listDataSpace = builder->CreateCall(GetCLibraryFunction("malloc"), llvm::ArrayRef(ops2));
+            auto * listPointer = builder->CreateBitCast(listDataSpace, listDataType);
+            int elementIndex = 0;
+
+            for (const auto &element : listConstrExpr->GetElements()) {
+                if (auto * strElement = dynamic_cast<StringExpression *>(element)) {
+                    auto * strElementValue = GetValueFromExpression(builder, strElement);
+
+                    auto * listArrayPointer = builder->CreateAdd(listPointer, builder->getInt32(elementIndex));
+                    builder->CreateStore(strElementValue, elementsNumberPointer);
+                }
+
+                elementIndex++;
+            }
+
         } else {
             COMPILER_ERROR("Const assignment for \"{0}\" with unknown type: {1}", variableName, value->GetClassName());
             exit(1);
@@ -721,6 +785,11 @@ namespace Hunter::Compiler {
             llvm::Type * structPointerType = llvm::PointerType::get(structType, 0);
 
             return builder->CreateLoad(structPointerType, m_Variables[variableName]);
+        } else if (auto * listExpr = dynamic_cast<ListExpression *>(variableExpr)) {
+            // todo: adapt for non string lists
+            llvm::Type * stringListType = llvm::PointerType::get(builder->getInt8PtrTy(), 0);
+
+            return builder->CreateLoad(stringListType, m_Variables[variableName]);
         } else {
             COMPILER_ERROR("Unsupported expressions for variable values found: {0}", variableExpr->GetClassName());
             exit(1);

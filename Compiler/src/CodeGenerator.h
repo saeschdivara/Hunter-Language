@@ -31,8 +31,14 @@ namespace Hunter::Compiler {
     class IntExpression;
     class AbstractSyntaxTree;
 
+    class BuiltinFeatureGenerator;
+
     class CodeGenerator {
     public:
+        llvm::Type *GetTypeFromDataType(llvm::IRBuilder<> *builder, DataTypeId dataType);
+
+        CodeGenerator();
+
         llvm::Module * GenerateCode(AbstractSyntaxTree * ast);
 
         DataTypeId GetVariableDeclarationType(VariableDeclarationExpression * expr);
@@ -68,6 +74,8 @@ namespace Hunter::Compiler {
 
         Debug::DebugGenerator * m_DebugGenerator = nullptr;
 
+        BuiltinFeatureGenerator * m_BuiltinGenerator;
+
         // make sure it lives as long as the module is used
         llvm::Module * m_Module;
         llvm::LLVMContext m_Context;
@@ -78,6 +86,8 @@ namespace Hunter::Compiler {
         std::unordered_map<std::string, FunctionExpression *> m_FunctionsDefinitions;
         std::unordered_map<std::string, llvm::Value *> m_Variables;
         std::unordered_map<std::string, Expression *> m_VariablesExpression;
+
+        friend class BuiltinFeatureGenerator;
     };
 }
 

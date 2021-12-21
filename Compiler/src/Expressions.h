@@ -491,11 +491,11 @@ namespace Hunter::Compiler {
 
     class ParameterExpression : public Expression {
     public:
-        ParameterExpression(std::string name, DataTypeId dataType) : m_Name(std::move(name)), m_DataType(dataType) {}
+        ParameterExpression(std::string name, DataType * dataType) : m_Name(std::move(name)), m_DataType(dataType) {}
 
         std::string & GetName() { return m_Name; }
 
-        DataTypeId GetDataType() const {
+        DataType * GetDataType() const {
             return m_DataType;
         }
 
@@ -505,12 +505,12 @@ namespace Hunter::Compiler {
 
         void Dump(int level) override {
             DumpSpaces(level);
-            std::cout << "Parameter Expression: " << GetName() << " (" << GetDataTypeString(GetDataType()) << ")" << std::endl;
+            std::cout << "Parameter Expression: " << GetName() << " (" << GetDataTypeString(GetDataType()->GetId()) << ")" << std::endl;
         }
 
     private:
         std::string m_Name;
-        DataTypeId m_DataType;
+        DataType * m_DataType;
     };
 
     class FunctionExpression : public BlockExpression {
